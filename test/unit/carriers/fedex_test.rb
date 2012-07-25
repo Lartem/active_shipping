@@ -2,10 +2,12 @@ require 'test_helper'
 
 class FedExTest < Test::Unit::TestCase
   def setup
-    @packages               = TestFixtures.packages
-    @locations              = TestFixtures.locations
-    @carrier                = FedEx.new(:key => '1111', :password => '2222', :account => '3333', :login => '4444')
-    @tracking_response      = xml_fixture('fedex/tracking_response')
+    @packages                     = TestFixtures.packages
+    @locations                    = TestFixtures.locations
+    @carrier                      = FedEx.new(:key => '1111', :password => '2222', :account => '3333', :login => '4444')
+    @tracking_response            = xml_fixture('fedex/tracking_response')
+    @in_transit_tracking_response = xml_fixture('fedex/in_transit_tracking_response')
+    @in_transit_tracking_response_document = REXML::Document.new(@in_transit_tracking_response)
   end
   
   def test_initialize_options_requirements
@@ -81,6 +83,15 @@ class FedExTest < Test::Unit::TestCase
     assert_equal 6, response.shipment_events.size
   end
   
+  def test_find_tracking_info_should_return_scheduled_delivery_date
+    @carrier.expects(:commit).returns(@in_transit_tracking_response)
+    expected_time_string = "2012-07-06T15:00:00-05:00"
+    expected_time = Time.parse(expected_time_string)
+    result = @carrier.find_tracking_info('077973360403984')
+    assert_equal expected_time, result.scheduled_delivery_date
+
+  end
+
   def test_find_tracking_info_should_return_shipment_events_in_ascending_chronological_order
     @carrier.expects(:commit).returns(@tracking_response)
     response = @carrier.find_tracking_info('077973360403984', :test => true)

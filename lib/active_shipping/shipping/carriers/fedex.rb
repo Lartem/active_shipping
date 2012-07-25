@@ -298,7 +298,7 @@ module ActiveMerchant
         message = response_message(xml)
         
         if success
-          tracking_number, origin, destination, status, status_code, status_description = nil
+          tracking_number, origin, destination, status, status_code, status_description, scheduled_delivery_date = nil
           shipment_events = []
 
           tracking_details = root_node.elements['TrackDetails']
@@ -330,6 +330,10 @@ module ActiveMerchant
                 :city =>        destination_node.get_text('City').to_s
               )
           
+          unless status == :delivered
+            scheduled_delivery_date = Time.parse(tracking_details.get_text('EstimatedDeliveryTimestamp').to_s)
+          end
+
           tracking_details.elements.each('Events') do |event|
             address  = event.elements['Address']
 
@@ -359,6 +363,7 @@ module ActiveMerchant
           :status => status,
           :status_code => status_code,
           :status_description => status_description,
+          :scheduled_delivery_date => scheduled_delivery_date,
           :shipment_events => shipment_events,
           :origin => origin,
           :destination => destination,

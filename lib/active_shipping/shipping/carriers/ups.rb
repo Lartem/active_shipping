@@ -304,12 +304,11 @@ module ActiveMerchant
         message = response_message(xml)
         
         if success
-          tracking_number, origin, destination, status_code, status_description = nil
+          tracking_number, origin, destination, status_code, status_description, scheduled_delivery_date = nil
           delivered, exception = false
           exception_event = nil
           shipment_events = []
           status = {}
-          scheduled_delivery_date = nil
 
           first_shipment = xml.elements['/*/Shipment']
           first_package = first_shipment.elements['Package']

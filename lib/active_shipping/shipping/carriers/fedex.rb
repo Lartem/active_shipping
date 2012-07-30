@@ -152,11 +152,11 @@ module ActiveMerchant
         options = @options.update(options)
 
         validate_address_request = build_validate_address_request(addressesToValidate)
-        
+        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
+        parse_address_validate_address_response(response)
       end
 
       protected
-
       def build_validate_address_request(origin, destination, options={})
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
@@ -183,20 +183,21 @@ module ActiveMerchant
           end
 
           #addresses to validate
-          root_node << build_address_to_validate(origin)
-          root_node << build_address_to_validate(destination)
+          [origin, destination].each {|location| root_node << build_location_node_for_validation(location)}
         end
       end
 
-      def build_address_to_validate(address) 
+      def build_location_node_for_validation(location, address_id) 
         XmlNode.new('AddressToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
-          av_node << XmlNode.new('AddressId', address[:address_id])
+          av_node << XmlNode.new('AddressId', address_id)
           av_node << XmlNode.new('Address') do |address_node|
-            address_node << XmlNode.new('StreetLines', address[:street])
-            address_node << XmlNode.new('City', address[:city])
-            address_node << XmlNode.new('StateOrProvinceCode', address[:state])
-            address_node << XmlNode.new('PostalCode', address[:postal_code])
-            address_node << XmlNode.new('CountryCode', address[:country_code])
+            [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
+              address_node << XmlNode.new('StreetLines', s_line)
+            end
+            address_node << XmlNode.new('City', location.city)
+            address_node << XmlNode.new('StateOrProvinceCode', location.province)
+            address_node << XmlNode.new('PostalCode', location.postal_code)
+            address_node << XmlNode.new('CountryCode', location.country_code(:alpha2))
           end
         end
       end
@@ -421,6 +422,10 @@ module ActiveMerchant
           :destination => destination,
           :tracking_number => tracking_number
         )
+      end
+
+      def parse_address_validation_response(response, options)
+
       end
             
       def response_status_node(document)

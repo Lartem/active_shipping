@@ -148,16 +148,16 @@ module ActiveMerchant
         parse_tracking_response(response, options)
       end
       
-      def validate_address(origin, destination, options={})
+      def validate_addresses(addresses, options={})
         options = @options.update(options)
 
-        validate_address_request = build_validate_address_request(addressesToValidate)
+        validate_address_request = build_validate_address_request(addresses)
         response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
         parse_address_validate_address_response(response)
       end
 
       protected
-      def build_validate_address_request(origin, destination, options={})
+      def build_validate_address_request(addresses_to_validate, options={})
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance') do |root_node|
@@ -173,7 +173,7 @@ module ActiveMerchant
           end
 
           #options
-          root_node << XmlNode.new('addressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
+          root_node << XmlNode.new('AddressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
             options_node << XmlNode.new('VerifyAddress', true)
             options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
             options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
@@ -183,7 +183,7 @@ module ActiveMerchant
           end
 
           #addresses to validate
-          [origin, destination].each {|location| root_node << build_location_node_for_validation(location)}
+          addresses_to_validate.each {|location| root_node << build_location_node_for_validation(location)}
         end
       end
 

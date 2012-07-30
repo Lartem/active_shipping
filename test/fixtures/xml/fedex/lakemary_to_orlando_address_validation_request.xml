@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<AddressValidationRequest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <WebAuthenticationDetail xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <UserCredential>
+      <Key>1111</Key>
+      <Password>2222</Password>
+    </UserCredential>
+  </WebAuthenticationDetail>
+  <ClientDetail xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <AccountNumber>3333</AccountNumber>
+    <MeterNumber>4444</MeterNumber>
+  </ClientDetail>
+  <TransactionDetail xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <CustomerTransactionId>ActiveShipping</CustomerTransactionId>
+  </TransactionDetail>
+  <Version xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <ServiceId>aval</ServiceId>
+    <Major>2</Major>
+    <Intermediate>0</Intermediate>
+    <Minor>0</Minor>
+  </Version>
+  <RequestTimestamp xmlns="http://fedex.com/ws/addressvalidation/v2">2009-07-20T12:01:55-04:00</RequestTimestamp>
+  <Options xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <VerifyAddresses>true</VerifyAddresses>
+    <MaximumNumberOfMatches>2</MaximumNumberOfMatches>
+    <StreetAccuracy>LOOSE</StreetAccuracy>
+    <ConvertToUpperCase>true</ConvertToUpperCase>
+    <RecognizeAlternateCityNames>true</RecognizeAlternateCityNames>
+    <ReturnParsedElements>true</ReturnParsedElements>
+  </Options>
+  <AddressesToValidate xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <AddressId>AddressFrom</AddressId>
+    <Address>
+      <StreetLines>Suite 1060, 400, Rinehart Rd</StreetLines>
+      <City>Lake Mary</City>
+      <StateOrProvinceCode>FL</StateOrProvinceCode>
+      <PostalCode>32746</PostalCode>
+      <CountryCode>US</CountryCode>
+    </Address>
+  </AddressesToValidate>
+  <AddressesToValidate xmlns="http://fedex.com/ws/addressvalidation/v2">
+    <AddressId>AddressTo</AddressId>
+    <Address>
+      <StreetLines>Suite 310, 5401, S Kirkman Rd</StreetLines>
+      <City>Orlando</City>
+      <StateOrProvinceCode>FL</StateOrProvinceCode>
+      <PostalCode>32819</PostalCode>
+      <CountryCode>US</CountryCode>
+    </Address>
+  </AddressesToValidate>
+</AddressValidationRequest>

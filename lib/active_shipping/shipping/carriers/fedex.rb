@@ -148,7 +148,59 @@ module ActiveMerchant
         parse_tracking_response(response, options)
       end
       
+      def validate_address(origin, destination, options={})
+        options = @options.update(options)
+
+        validate_address_request = build_validate_address_request(addressesToValidate)
+        
+      end
+
       protected
+
+      def build_validate_address_request(origin, destination, options={})
+        xml_request = XmlNode.new('AddressValidationRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance') do |root_node|
+          root_node << build_request_header
+
+          #version
+          root_node << XmlNode.new('Version', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |version_node|
+            version_node << XmlNode.new('VerifyAddress', true)
+            version_node << XmlNode.new('ServiceId', 'aval')
+            version_node << XmlNode.new('Major', 2)
+            version_node << XmlNode.new('Intermediate', 0)
+            version_node << XmlNode.new('Minor', 0)
+          end
+
+          #options
+          root_node << XmlNode.new('addressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
+            options_node << XmlNode.new('VerifyAddress', true)
+            options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
+            options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
+            options_node << XmlNode.new('ConvertToUpperCase', true)
+            options_node << XmlNode.new('RecognizeAlternateCityNames', true)
+            options_node << XmlNode.new('ReturnParsedElements', options[:av_parsed] || true)
+          end
+
+          #addresses to validate
+          root_node << build_address_to_validate(origin)
+          root_node << build_address_to_validate(destination)
+        end
+      end
+
+      def build_address_to_validate(address) 
+        XmlNode.new('AddressToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
+          av_node << XmlNode.new('AddressId', address[:address_id])
+          av_node << XmlNode.new('Address') do |address_node|
+            address_node << XmlNode.new('StreetLines', address[:street])
+            address_node << XmlNode.new('City', address[:city])
+            address_node << XmlNode.new('StateOrProvinceCode', address[:state])
+            address_node << XmlNode.new('PostalCode', address[:postal_code])
+            address_node << XmlNode.new('CountryCode', address[:country_code])
+          end
+        end
+      end
+
       def build_rate_request(origin, destination, packages, options={})
         imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
 

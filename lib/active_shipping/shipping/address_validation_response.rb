@@ -4,18 +4,12 @@ module ActiveMerchant #:nodoc:
     class AddressValidation < Response
       attr_reader :carrier # symbol
       attr_reader :carrier_name # string
-      attr_reader :status # symbol
-      attr_reader :status_code # string
-      attr_reader :status_description #string
       attr_reader :addresses # validated locations, wrapped to AddressValidationDetails
       attr_reader :parsed_results # parsed results separated from response
       
       def initialize(success, message, params = {}, options = {})
         @carrier = options[:carrier].parameterize.to_sym
         @carrier_name = options[:carrier]
-        @status = options[:status]
-        @status_code = options[:status_code]
-        @status_description = options[:status_description]
         @addresses = options[:addresses]
         @parsed_results = options[:parsed_av_results]
         super
@@ -24,10 +18,10 @@ module ActiveMerchant #:nodoc:
 
     # contains location & additional info about validation
     class AddressValidationDetails
-      attr_reader :score, :changes, :location, :deliverable
+      attr_reader :score, :changes, :location, :deliverable, :address_id
 
-      def initialize(location, score, changes=nil, deliverable=true)
-        @location, @score, @changes, @deliverable = location, score, changes, deliverable
+      def initialize(location, score, address_id, changes=nil, deliverable=true)
+         @address_id, @location, @score, @changes, @deliverable = address_id, location, score, changes, deliverable
       end
 
       def is_deliverable?

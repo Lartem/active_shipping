@@ -150,10 +150,9 @@ module ActiveMerchant
       
       def validate_addresses(addresses, options={})
         options = @options.update(options)
-
         validate_address_request = build_validate_address_request(addresses)
-        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
-        parse_address_validate_address_response(response)
+        response = commit(save_request(validate_address_request), (options[:test] || false))
+        parse_address_validation_response(response, options)
       end
 
       protected
@@ -165,15 +164,17 @@ module ActiveMerchant
 
           #version
           root_node << XmlNode.new('Version', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |version_node|
-            version_node << XmlNode.new('VerifyAddress', true)
             version_node << XmlNode.new('ServiceId', 'aval')
             version_node << XmlNode.new('Major', 2)
             version_node << XmlNode.new('Intermediate', 0)
             version_node << XmlNode.new('Minor', 0)
           end
 
+          #request timestamp
+          root_node << XmlNode.new('RequestTimestamp', Time.now)
+
           #options
-          root_node << XmlNode.new('AddressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
+          root_node << XmlNode.new('Options', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
             options_node << XmlNode.new('VerifyAddress', true)
             options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
             options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
@@ -183,11 +184,12 @@ module ActiveMerchant
           end
 
           #addresses to validate
-          addresses_to_validate.each {|location| root_node << build_location_node_for_validation(location)}
+          addresses_to_validate.each {|address_id, location| root_node << build_location_node_for_validation(address_id, location)}
         end
+        xml_request.to_s
       end
 
-      def build_location_node_for_validation(location, address_id) 
+      def build_location_node_for_validation(address_id, location) 
         XmlNode.new('AddressToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
           av_node << XmlNode.new('AddressId', address_id)
           av_node << XmlNode.new('Address') do |address_node|
@@ -430,7 +432,7 @@ module ActiveMerchant
         
         success = response_success?(xml)
         message = response_message(xml)
-        addresses, parsed_results = []
+        addresses = [], parsed_results = []
         root_node.elements.each('AddressResults') do |address_result_node|
           address_id, score, changes, delivery_point_validation, parsed_address, address_details = nil
           address_id = address_result_node.get_text('AddressId').to_s
@@ -449,15 +451,15 @@ module ActiveMerchant
                 :postal_code => address_node.get_text('PostalCode').to_s,
                 :country => address_node.get_text('CountryCode').to_s
               )
-              addresses << AddressValidationDetails.new(location, score, changes, delivery_point_validation)
+              addresses << AddressValidationDetails.new(address_id, location, score, changes, delivery_point_validation)
             end
-            address_details_node.elemtns.each('ParsedAddress') do |p_address|
+            address_details_node.elements.each('ParsedAddress') do |p_address|
               parsed_results << ParsedAddressValidationResults.new(
                 *(['ParsedStreetLine', 
                     'ParsedCity', 
                     'ParsedStateOrProvinceCode', 
                     'ParsedPostalCode', 
-                    'ParsedCountry'].map {|el| parse_parsed_elements(p_address,el)})
+                    'ParsedCountryCode'].map {|el| parse_parsed_elements(p_address,el)})
               )
             end
           end
@@ -466,20 +468,17 @@ module ActiveMerchant
           :carrier => @@name,
           :xml => response,
           :request => last_request,
-          :status => status,
-          :status_code => status_code,
-          :status_description => status_description,
-          :addresses => addresses_list,
+          :addresses => addresses,
           :parsed_results => parsed_results
         )
       end
 
       def parse_parsed_elements(parsed_address_node, node_name)
-        parsed_address_node.elements[node_name].inject('Elements', []) do |acc, element|
+        parsed_address_node.elements[node_name].elements.inject('Elements', []) do |acc, element|
           name = element.get_text('Name')
           value = element.get_text('Value')
           local_changes = element.get_text('Changes')
-          acc.push(ParsedAddressValidationElement.new(name, value, local_changes))
+          acc << ParsedAddressValidationElement.new(name, value, local_changes)
         end
       end
             

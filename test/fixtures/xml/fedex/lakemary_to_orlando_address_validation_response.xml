@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <AddressValidationReply xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <HighestSeverity xmlns="http://fedex.com/ws/addressvalidation/v2">SUCCESS</HighestSeverity>
   <Notifications xmlns="http://fedex.com/ws/addressvalidation/v2">

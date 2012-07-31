@@ -7,7 +7,7 @@ module ActiveMerchant #:nodoc:
       attr_reader :status # symbol
       attr_reader :status_code # string
       attr_reader :status_description #string
-      attr_reader :addresses # validated locations
+      attr_reader :addresses # validated locations, wrapped to AddressValidationDetails
       attr_reader :parsed_results # parsed results separated from response
       
       def initialize(success, message, params = {}, options = {})
@@ -19,6 +19,19 @@ module ActiveMerchant #:nodoc:
         @addresses = options[:addresses]
         @parsed_results = options[:parsed_av_results]
         super
+      end
+    end
+
+    # contains location & additional info about validation
+    class AddressValidationDetails
+      attr_reader :score, :changes, :location, :deliverable
+
+      def initialize(location, score, changes=nil, deliverable=true)
+        @location, @score, @changes, @deliverable = location, score, changes, deliverable
+      end
+
+      def is_deliverable?
+        @deliverable == 'CONFIRMED'
       end
     end
 

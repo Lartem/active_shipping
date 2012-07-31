@@ -425,7 +425,62 @@ module ActiveMerchant
       end
 
       def parse_address_validation_response(response, options)
-        // TODO
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['AddressValidationReply']
+        
+        success = response_success?(xml)
+        message = response_message(xml)
+        addresses, parsed_results = []
+        root_node.elements.each('AddressResults') do |address_result_node|
+          address_id, score, changes, delivery_point_validation, parsed_address, address_details = nil
+          address_id = address_result_node.get_text('AddressId').to_s
+          address_result_node.elements.each('ProposedAddressDetails') do |address_details_node|
+            score = address_details_node.get_text('Score')
+            changes = address_details_node.elements.inject('Changes', []) {|acc, change_node| acc.push(change_node.get_text.to_s)}
+            delivery_point_validation = address_details_node.get_text('DeliveryPointValidation')
+            address_details_node.elements.each('Address') do |address_node|
+              address1, address2, address3 = address_node.elements.inject('StreetLines', []) {|acc, street_line| acc.push(street_line.get_text.to_s)}
+              location = Location.new(
+                :address1 => address1,
+                :address2 => address2,
+                :address3 => address3,
+                :city => address_node.get_text('City').to_s,
+                :province => address_node.get_text('StateOrProvinceCode').to_s,
+                :postal_code => address_node.get_text('PostalCode').to_s,
+                :country => address_node.get_text('CountryCode').to_s
+              )
+              addresses << AddressValidationDetails.new(location, score, changes, delivery_point_validation)
+            end
+            address_details_node.elemtns.each('ParsedAddress') do |p_address|
+              parsed_results << ParsedAddressValidationResults.new(
+                parse_parsed_elements(p_address, 'ParsedStreetLine')
+                parsed_city = parse_parsed_elements(p_address, 'ParsedCity')
+                parsed_province = parse_parsed_elements(p_address, 'ParsedStateOrProvinceCode')
+                parsed_postal_code = parse_parsed_elements(p_address, 'ParsedPostalCode')
+                parsed_country = parse_parsed_elements(p_address, 'ParsedCountry')
+              )
+            end
+          end
+        end
+        AddressValidation.new(success, message, Hash.from_xml(response),
+          :carrier => @@name,
+          :xml => response,
+          :request => last_request,
+          :status => status,
+          :status_code => status_code,
+          :status_description => status_description,
+          :addresses => addresses_list,
+          :parsed_results => parsed_results
+        )
+      end
+
+      def parse_parsed_elements(parsed_address_node, node_name)
+        parsed_address_node.elements[node_name].inject('Elements', []) do |acc, element|
+          name = element.get_text('Name')
+          value = element.get_text('Value')
+          local_changes = element.get_text('Changes')
+          acc.push(ParsedAddressValidationElement.new(name, value, local_changes))
+        end
       end
             
       def response_status_node(document)

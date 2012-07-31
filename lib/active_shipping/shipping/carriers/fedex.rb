@@ -453,10 +453,10 @@ module ActiveMerchant
             end
             address_details_node.elemtns.each('ParsedAddress') do |p_address|
               parsed_results << ParsedAddressValidationResults.new(
-                parse_parsed_elements(p_address, 'ParsedStreetLine')
-                parse_parsed_elements(p_address, 'ParsedCity')
-                parse_parsed_elements(p_address, 'ParsedStateOrProvinceCode')
-                parse_parsed_elements(p_address, 'ParsedPostalCode')
+                parse_parsed_elements(p_address, 'ParsedStreetLine'),
+                parse_parsed_elements(p_address, 'ParsedCity'),
+                parse_parsed_elements(p_address, 'ParsedStateOrProvinceCode'),
+                parse_parsed_elements(p_address, 'ParsedPostalCode'),
                 parse_parsed_elements(p_address, 'ParsedCountry')
               )
             end

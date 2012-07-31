@@ -217,11 +217,10 @@ class FedExTest < Test::Unit::TestCase
   end
 
   def test_build_address_validation_request
-    expected_request = xml_fixture('fedex/lakemary_to_orlando_address_validation_request')
-    mock_response = xml_fixture('fedex/lakemary_to_orlando_address_validation_response')
+    expected_request = xml_fixture('fedex/ottawa_and_beverly_hills_address_validation_request')
+    mock_response = xml_fixture('fedex/ottawa_and_beverly_hills_address_validation_response')
     Time.any_instance.expects(:to_xml_value).returns("2009-07-20T12:01:55-04:00")
-    @carrier.expects(:commit).returns(mock_response)
-    #.with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
+    @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
     validated_addresses = @carrier.validate_addresses({ 'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]}, :test => true)
   end
 end

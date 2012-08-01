@@ -499,6 +499,7 @@ module ActiveMerchant
       end
       
       def commit(request, test = false)
+        puts (test ? TEST_URL : LIVE_URL)
         ssl_post(test ? TEST_URL : LIVE_URL, request.gsub("\n",''))        
       end
       

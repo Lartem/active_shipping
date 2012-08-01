@@ -6,6 +6,7 @@ class FedExTest < Test::Unit::TestCase
     @packages  = TestFixtures.packages
     @locations = TestFixtures.locations
     @carrier   = FedEx.new(fixtures(:fedex).merge(:test => true))
+    @carrier_prod = FedEx.new(fixtures(:fedex_production).merge(:test => false))
   end
     
   def test_valid_credentials
@@ -153,10 +154,11 @@ class FedExTest < Test::Unit::TestCase
     assert_not_equal residential_response.rates.map(&:price), commercial_response.rates.map(&:price)
   end
 
+  # fedex does not have address validation test service 
   def test_address_validation
     response = nil
     assert_nothing_raised do
-      response = @carrier.validate_addresses({'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]})
+      response = @carrier_prod.validate_addresses({'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]}, :test=>false)
     end
   end
 end

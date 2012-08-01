@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<AddressValidationRequest xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
-  <WebAuthenticationDetail>
+<AddressValidationRequest xmlns='http://fedex.com/ws/addressvalidation/v2' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+  <WebAuthenticationDetail xmlns='http://fedex.com/ws/addressvalidation/v2'>
     <UserCredential>
       <Key>1111</Key>
       <Password>2222</Password>
@@ -21,14 +21,14 @@
   </Version>
   <RequestTimestamp>2009-07-20T12:01:55-04:00</RequestTimestamp>
   <Options xmlns='http://fedex.com/ws/addressvalidation/v2'>
-    <VerifyAddress>true</VerifyAddress>
+    <VerifyAddresses>true</VerifyAddresses>
     <MaximumNumberOfMatches>2</MaximumNumberOfMatches>
     <StreetAccuracy>LOOSE</StreetAccuracy>
     <ConvertToUpperCase>true</ConvertToUpperCase>
     <RecognizeAlternateCityNames>true</RecognizeAlternateCityNames>
     <ReturnParsedElements>true</ReturnParsedElements>
   </Options>
-  <AddressToValidate xmlns='http://fedex.com/ws/addressvalidation/v2'>
+  <AddressesToValidate xmlns='http://fedex.com/ws/addressvalidation/v2'>
     <AddressId>address_from</AddressId>
     <Address>
       <StreetLines>110 Laurier Avenue West</StreetLines>
@@ -37,8 +37,8 @@
       <PostalCode>K1P 1J1</PostalCode>
       <CountryCode>CA</CountryCode>
     </Address>
-  </AddressToValidate>
-  <AddressToValidate xmlns='http://fedex.com/ws/addressvalidation/v2'>
+  </AddressesToValidate>
+  <AddressesToValidate xmlns='http://fedex.com/ws/addressvalidation/v2'>
     <AddressId>address_to</AddressId>
     <Address>
       <StreetLines>455 N. Rexford Dr.</StreetLines>
@@ -48,5 +48,5 @@
       <PostalCode>90210</PostalCode>
       <CountryCode>US</CountryCode>
     </Address>
-  </AddressToValidate>
+  </AddressesToValidate>
 </AddressValidationRequest>

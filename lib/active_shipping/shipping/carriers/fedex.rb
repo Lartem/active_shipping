@@ -151,7 +151,8 @@ module ActiveMerchant
       def validate_addresses(addresses, options={})
         options = @options.update(options)
         validate_address_request = build_validate_address_request(addresses)
-        response = commit(save_request(validate_address_request), (options[:test] || false))
+        puts validate_address_request
+        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_address_validation_response(response, options)
       end
 
@@ -427,10 +428,12 @@ module ActiveMerchant
       end
 
       def parse_address_validation_response(response, options)
+        puts 'validation response'
+        p response
         xml = REXML::Document.new(response)
         root_node = xml.elements['AddressValidationReply']
-        
         success = response_success?(xml)
+        p success
         message = response_message(xml)
         addresses = [], parsed_results = []
         root_node.elements.each('AddressResults') do |address_result_node|

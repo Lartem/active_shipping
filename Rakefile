@@ -15,6 +15,18 @@ namespace :test do
     t.pattern = 'test/remote/*_test.rb'
     t.verbose = true
   end
+
+  Rake::TestTask.new(:units_fedex) do |t|
+    t.libs << "test"
+    t.pattern = 'test/unit/**/fedex_test.rb'
+    t.verbose = true
+  end
+
+  Rake::TestTask.new(:remote_fedex) do |t|
+    t.libs << "test"
+    t.pattern = 'test/remote/fedex_test.rb'
+    t.verbose = true
+  end
 end
 
 desc "Default Task"

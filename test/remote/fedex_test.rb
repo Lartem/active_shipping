@@ -152,4 +152,11 @@ class FedExTest < Test::Unit::TestCase
 
     assert_not_equal residential_response.rates.map(&:price), commercial_response.rates.map(&:price)
   end
+
+  def test_address_validation
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.validate_addresses({'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]})
+    end
+  end
 end

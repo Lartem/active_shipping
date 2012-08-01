@@ -432,7 +432,8 @@ module ActiveMerchant
         root_node = xml.elements['AddressValidationReply']
         success = response_success?(xml)
         message = response_message(xml)
-        addresses = [], parsed_results = []
+        addresses = {}
+        parsed_results = []
         root_node.elements.each('AddressResults') do |address_result_node|
           address_id, score, changes, delivery_point_validation, parsed_address, address_details = nil
           address_id = address_result_node.get_text('AddressId').to_s
@@ -451,15 +452,15 @@ module ActiveMerchant
                 :postal_code => address_node.get_text('PostalCode').to_s,
                 :country => address_node.get_text('CountryCode').to_s
               )
-              addresses << AddressValidationDetails.new(address_id, location, score, changes, delivery_point_validation)
+              addresses.merge!({address_id => AddressValidationDetails.new(location, score, address_id, changes, delivery_point_validation)})
             end
             address_details_node.elements.each('ParsedAddress') do |p_address|
               parsed_results << ParsedAddressValidationResults.new(
-                *(['ParsedStreetLine', 
+                *['ParsedStreetLine', 
                     'ParsedCity', 
                     'ParsedStateOrProvinceCode', 
                     'ParsedPostalCode', 
-                    'ParsedCountryCode'].map {|el| parse_parsed_elements(p_address,el)})
+                    'ParsedCountryCode'].map {|el| parse_parsed_elements(p_address,el)}
               )
             end
           end

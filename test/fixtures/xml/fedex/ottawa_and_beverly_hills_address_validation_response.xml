@@ -1,179 +1,171 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<AddressValidationReply xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <HighestSeverity xmlns="http://fedex.com/ws/addressvalidation/v2">SUCCESS</HighestSeverity>
-  <Notifications xmlns="http://fedex.com/ws/addressvalidation/v2">
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<AddressValidationReply>
+<HighestSeverity>SUCCESS</HighestSeverity>
+  <Notifications>
     <Severity>SUCCESS</Severity>
     <Source>wsi</Source>
   </Notifications>
-  <TransactionDetail xmlns="http://fedex.com/ws/addressvalidation/v2">
+  <TransactionDetail>
     <CustomerTransactionId>ActiveShipping</CustomerTransactionId>
   </TransactionDetail>
-  <Version xmlns="http://fedex.com/ws/addressvalidation/v2">
+  <Version>
     <ServiceId>aval</ServiceId>
     <Major>2</Major>
     <Intermediate>0</Intermediate>
     <Minor>0</Minor>
   </Version>
-  <ReplyTimestamp xmlns="http://fedex.com/ws/addressvalidation/v2">2009-07-20T12:01:55-04:00</ReplyTimestamp>
-  <AddressResults xmlns="http://fedex.com/ws/addressvalidation/v2">
-    <AddressId>AddressFrom</AddressId>
+  <ReplyTimestamp>2012-08-01T09:22:39.897Z</ReplyTimestamp>
+  <AddressResults>
+    <AddressId>address_from</AddressId>
     <ProposedAddressDetails>
       <Score>100</Score>
-      <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
-      <Changes>NORMALIZED</Changes>
-      <DeliveryPointValidation>CONFIRMED</DeliveryPointValidation>
+      <Changes>NO_CHANGES</Changes>
+      <DeliveryPointValidation>UNAVAILABLE</DeliveryPointValidation>
+      <CompanyName>CITY OF OTTAWA</CompanyName>
       <Address>
-        <StreetLines>400 RINEHART RD STE 1060</StreetLines>
-        <City>LAKE MARY</City>
-        <StateOrProvinceCode>FL</StateOrProvinceCode>
-        <PostalCode>32746-2559</PostalCode>
-        <CountryCode>US</CountryCode>
+        <StreetLines>110 LAURIER AVE W</StreetLines>
+        <City>OTTAWA</City>
+        <StateOrProvinceCode>ON</StateOrProvinceCode>
+        <PostalCode>K1P 1J1</PostalCode>
+        <CountryCode>CA</CountryCode>
       </Address>
+      <ParsedCompanyName>
+        <Elements>
+          <Name>companyName</Name>
+          <Value>CITY OF OTTAWA</Value>
+          <Changes>NO_CHANGES</Changes>
+        </Elements>
+      </ParsedCompanyName>
       <ParsedAddress>
         <ParsedStreetLine>
           <Elements>
             <Name>houseNumber</Name>
-            <Value>400</Value>
+            <Value>110</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>streetName</Name>
-            <Value>RINEHART</Value>
+            <Value>LAURIER</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>streetSuffix</Name>
-            <Value>RD</Value>
+            <Value>AVE</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
-            <Name>unitLabel</Name>
-            <Value>STE</Value>
-            <Changes>NORMALIZED</Changes>
-          </Elements>
-          <Elements>
-            <Name>unitNumber</Name>
-            <Value>1060</Value>
+            <Name>trailingDirectional</Name>
+            <Value>W</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedStreetLine>
         <ParsedCity>
           <Elements>
             <Name>city</Name>
-            <Value>LAKE MARY</Value>
+            <Value>OTTAWA</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedCity>
         <ParsedStateOrProvinceCode>
           <Elements>
             <Name>stateProvince</Name>
-            <Value>FL</Value>
+            <Value>ON</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedStateOrProvinceCode>
         <ParsedPostalCode>
           <Elements>
             <Name>postalBase</Name>
-            <Value>32746</Value>
+            <Value>K1P 1J1</Value>
             <Changes>NO_CHANGES</Changes>
-          </Elements>
-          <Elements>
-            <Name>postalAddOn</Name>
-            <Value>2559</Value>
-            <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
-          </Elements>
-          <Elements>
-            <Name>postalDPV</Name>
-            <Value>60</Value>
-            <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
           </Elements>
         </ParsedPostalCode>
         <ParsedCountryCode>
           <Elements>
             <Name>country</Name>
-            <Value>US</Value>
+            <Value>CA</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedCountryCode>
       </ParsedAddress>
-      <RemovedNonAddressData />
+      <RemovedNonAddressData/>
     </ProposedAddressDetails>
   </AddressResults>
-  <AddressResults xmlns="http://fedex.com/ws/addressvalidation/v2">
-    <AddressId>AddressTo</AddressId>
+  <AddressResults>
+    <AddressId>address_to</AddressId>
     <ProposedAddressDetails>
-      <Score>100</Score>
+      <Score>95</Score>
       <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
       <Changes>NORMALIZED</Changes>
-      <DeliveryPointValidation>CONFIRMED</DeliveryPointValidation>
+      <Changes>APARTMENT_NUMBER_NOT_FOUND</Changes>
+      <DeliveryPointValidation>UNCONFIRMED</DeliveryPointValidation>
       <Address>
-        <StreetLines>5401 S KIRKMAN RD STE 310</StreetLines>
-        <City>ORLANDO</City>
-        <StateOrProvinceCode>FL</StateOrProvinceCode>
-        <PostalCode>32819-7937</PostalCode>
+        <StreetLines>455 N REXFORD DR FL 3</StreetLines>
+        <City>BEVERLY HILLS</City>
+        <StateOrProvinceCode>CA</StateOrProvinceCode>
+        <PostalCode>90210-4817</PostalCode>
         <CountryCode>US</CountryCode>
       </Address>
       <ParsedAddress>
         <ParsedStreetLine>
           <Elements>
             <Name>houseNumber</Name>
-            <Value>5401</Value>
+            <Value>455</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>leadingDirectional</Name>
-            <Value>S</Value>
+            <Value>N</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>streetName</Name>
-            <Value>KIRKMAN</Value>
+            <Value>REXFORD</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>streetSuffix</Name>
-            <Value>RD</Value>
+            <Value>DR</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>unitLabel</Name>
-            <Value>STE</Value>
+            <Value>FL</Value>
             <Changes>NORMALIZED</Changes>
           </Elements>
           <Elements>
             <Name>unitNumber</Name>
-            <Value>310</Value>
-            <Changes>NO_CHANGES</Changes>
+            <Value>3</Value>
+            <Changes>APARTMENT_NUMBER_NOT_FOUND</Changes>
           </Elements>
         </ParsedStreetLine>
         <ParsedCity>
           <Elements>
             <Name>city</Name>
-            <Value>ORLANDO</Value>
+            <Value>BEVERLY HILLS</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedCity>
         <ParsedStateOrProvinceCode>
           <Elements>
             <Name>stateProvince</Name>
-            <Value>FL</Value>
+            <Value>CA</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
         </ParsedStateOrProvinceCode>
         <ParsedPostalCode>
           <Elements>
             <Name>postalBase</Name>
-            <Value>32819</Value>
+            <Value>90210</Value>
             <Changes>NO_CHANGES</Changes>
           </Elements>
           <Elements>
             <Name>postalAddOn</Name>
-            <Value>7937</Value>
+            <Value>4817</Value>
             <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
           </Elements>
           <Elements>
             <Name>postalDPV</Name>
-            <Value>85</Value>
+            <Value>99</Value>
             <Changes>MODIFIED_TO_ACHIEVE_MATCH</Changes>
           </Elements>
         </ParsedPostalCode>
@@ -185,7 +177,7 @@
           </Elements>
         </ParsedCountryCode>
       </ParsedAddress>
-      <RemovedNonAddressData />
+      <RemovedNonAddressData/>
     </ProposedAddressDetails>
   </AddressResults>
 </AddressValidationReply>

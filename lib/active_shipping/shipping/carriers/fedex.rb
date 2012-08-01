@@ -151,7 +151,6 @@ module ActiveMerchant
       def validate_addresses(addresses, options={})
         options = @options.update(options)
         validate_address_request = build_validate_address_request(addresses)
-        puts validate_address_request
         response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_address_validation_response(response, options)
       end
@@ -160,8 +159,9 @@ module ActiveMerchant
       def build_validate_address_request(addresses_to_validate, options={})
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
-          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance') do |root_node|
-          root_node << build_request_header
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |root_node|
+          root_node << build_request_header({'xmlns'=>'http://fedex.com/ws/addressvalidation/v2'})
 
           #version
           root_node << XmlNode.new('Version', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |version_node|
@@ -176,7 +176,7 @@ module ActiveMerchant
 
           #options
           root_node << XmlNode.new('Options', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
-            options_node << XmlNode.new('VerifyAddress', true)
+            options_node << XmlNode.new('VerifyAddresses', true)
             options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
             options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
             options_node << XmlNode.new('ConvertToUpperCase', true)
@@ -191,7 +191,7 @@ module ActiveMerchant
       end
 
       def build_location_node_for_validation(address_id, location) 
-        XmlNode.new('AddressToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
+        XmlNode.new('AddressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
           av_node << XmlNode.new('AddressId', address_id)
           av_node << XmlNode.new('Address') do |address_node|
             [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
@@ -282,8 +282,8 @@ module ActiveMerchant
         xml_request.to_s
       end
       
-      def build_request_header
-        web_authentication_detail = XmlNode.new('WebAuthenticationDetail') do |wad|
+      def build_request_header(namespaces=nil)
+        web_authentication_detail = XmlNode.new('WebAuthenticationDetail', namespaces) do |wad|
           wad << XmlNode.new('UserCredential') do |uc|
             uc << XmlNode.new('Key', @options[:key])
             uc << XmlNode.new('Password', @options[:password])
@@ -428,12 +428,9 @@ module ActiveMerchant
       end
 
       def parse_address_validation_response(response, options)
-        puts 'validation response'
-        p response
         xml = REXML::Document.new(response)
         root_node = xml.elements['AddressValidationReply']
         success = response_success?(xml)
-        p success
         message = response_message(xml)
         addresses = [], parsed_results = []
         root_node.elements.each('AddressResults') do |address_result_node|
@@ -499,7 +496,6 @@ module ActiveMerchant
       end
       
       def commit(request, test = false)
-        puts (test ? TEST_URL : LIVE_URL)
         ssl_post(test ? TEST_URL : LIVE_URL, request.gsub("\n",''))        
       end
       

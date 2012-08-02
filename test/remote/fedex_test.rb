@@ -161,4 +161,13 @@ class FedExTest < Test::Unit::TestCase
       response = @carrier_prod.validate_addresses({'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]}, :test=>false)
     end
   end
+
+  def test_pickup_availability
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.check_pickup_availability(@locations[:ottawa], 
+        ['same_day', 'future_day'], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
+        Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii))
+    end
+  end
 end

@@ -1,0 +1,46 @@
+<AddressValidationRequest xmlns='http://fedex.com/ws/courierdispatch/v3' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+  <WebAuthenticationDetail xmlns='http://fedex.com/ws/courierdispatch/v3'>
+    <UserCredential>
+      <Key>1111</Key>
+      <Password>2222</Password>
+    </UserCredential>
+  </WebAuthenticationDetail>
+  <ClientDetail>
+    <AccountNumber>3333</AccountNumber>
+    <MeterNumber>4444</MeterNumber>
+  </ClientDetail>
+  <TransactionDetail>
+    <CustomerTransactionId>ActiveShipping</CustomerTransactionId>
+  </TransactionDetail>
+  <Version xmlns='http://fedex.com/ws/courierdispatch/v3'>
+    <ServiceId>disp</ServiceId>
+    <Major>3</Major>
+    <Intermediate>0</Intermediate>
+    <Minor>1</Minor>
+  </Version>
+  <PickupAddress xmlns='http://fedex.com/ws/courierdispatch/v3'>
+    <StreetLines>110 Laurier Avenue West</StreetLines>
+    <City>Ottawa</City>
+    <StateOrProvinceCode>ON</StateOrProvinceCode>
+    <PostalCode>K1P 1J1</PostalCode>
+    <CountryCode>CA</CountryCode>
+  </PickupAddress>
+  <PickupRequestType xmlns='http://fedex.com/ws/courierdispatch/v3'>SAME_DAY</PickupRequestType>
+  <PickupRequestType xmlns='http://fedex.com/ws/courierdispatch/v3'>FUTURE_DAY</PickupRequestType>
+  <DispatchDate xmlns='http://fedex.com/ws/courierdispatch/v3'>2012-08-20</DispatchDate>
+  <PackageReadyTime xmlns='http://fedex.com/ws/courierdispatch/v3'>2012-08-10T16:00:00+07:00</PackageReadyTime>
+  <CustomerCloseTime xmlns='http://fedex.com/ws/courierdispatch/v3'>16:00:00</CustomerCloseTime>
+  <Carriers xmlns='http://fedex.com/ws/courierdispatch/v3'>FDXE</Carriers>
+  <ShipmentAttributes xmlns='http://fedex.com/ws/courierdispatch/v3'>
+    <Weight>
+      <Units>LB</Units>
+      <Value>7.5</Value>
+    </Weight>
+    <Dimensions>
+      <Length>15</Length>
+      <Width>10</Width>
+      <Height>5</Height>
+      <Units>IN</Units>
+    </Dimensions>
+  </ShipmentAttributes>
+</AddressValidationRequest>

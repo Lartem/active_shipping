@@ -167,19 +167,21 @@ module ActiveMerchant
         options = @options.update(options)
         check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, shipment_attributes)
-        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        parse_pickup_request(response, options)        
+        p check_pickup_request
+        response = commit(save_request(check_pickup_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_pickup_response(response, options)        
       end
 
       protected
       def build_pickup_request(pickup_address, request_types, dispatch_date, 
-          package_ready_time, customer_close_time, carriers, package)
+          package_ready_time, customer_close_time, carriers, packages)
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
           'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
+
           root_node << build_request_header(PICKUP_XMLNS)
-          
+
           #version
           root_node << XmlNode.new('Version', PICKUP_XMLNS) do |version_node|
             version_node << XmlNode.new('ServiceId', 'disp')
@@ -195,7 +197,7 @@ module ActiveMerchant
           request_types.each {|rt| root_node << XmlNode.new('PickupRequestType', PICKUP_REQUEST_TYPES[rt] || rt.capitalize, PICKUP_XMLNS)}
 
           #dispatch date
-          root_node << XmlNode.new('DispatchDate', dispatch_date, PICKUP_XMLNS)
+          root_node << XmlNode.new('DispatchDate', dispatch_date.strftime('%Y-%m-%d'), PICKUP_XMLNS)
 
           #package ready time
           root_node << XmlNode.new('PackageReadyTime', package_ready_time, PICKUP_XMLNS)
@@ -204,11 +206,11 @@ module ActiveMerchant
           root_node << XmlNode.new('CustomerCloseTime', customer_close_time.strftime('%H:%M:%S'), PICKUP_XMLNS)
 
           #carriers
-          carriers.each { |c| root_node << XmlNode.new('Carriers', c, PICKUP_XMLNS)}
+          carriers.each { |c| root_node << XmlNode.new('Carriers', CarrierCodes[c], PICKUP_XMLNS)}
 
           #shipment attributes
           imperial = ['US','LR','MM'].include?(pickup_address.country_code(:alpha2))
-          root_node << build_package_node(package, 'ShipmentAttributes', PICKUP_XMLNS)
+          packages.each {|p| root_node << build_package_node(p, 'ShipmentAttributes', imperial, PICKUP_XMLNS)}
         end
         xml_request.to_s
       end
@@ -547,7 +549,10 @@ module ActiveMerchant
           acc << ParsedAddressValidationElement.new(name, value, local_changes)
         end
       end
-            
+
+      def parse_pickup_response(response, options)
+      end
+
       def response_status_node(document)
         document.elements['/*/Notifications/']
       end

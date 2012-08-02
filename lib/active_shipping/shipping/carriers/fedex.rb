@@ -121,6 +121,13 @@ module ActiveMerchant
         'TR' => :transfer
       })
 
+      PICKUP_REQUEST_TYPES = {
+        'same_day' => 'SAME_DAY',
+        'future_day' => 'FUTURE_DAY'
+      }
+
+      PICKUP_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
+
       def self.service_name_for_code(service_code)
         ServiceTypes[service_code] || "FedEx #{service_code.titleize.sub(/Fedex /, '')}"
       end
@@ -155,7 +162,57 @@ module ActiveMerchant
         parse_address_validation_response(response, options)
       end
 
+      def check_pickup_availability(pickup_address, request_types, dispatch_date, 
+        package_ready_time, customer_close_time, carriers, shipment_attributes, options={})
+        options = @options.update(options)
+        check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
+          package_ready_time, customer_close_time, carriers, shipment_attributes)
+        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_pickup_request(response, options)        
+      end
+
       protected
+      def build_pickup_request(pickup_address, request_types, dispatch_date, 
+          package_ready_time, customer_close_time, carriers, package)
+        xml_request = XmlNode.new('AddressValidationRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
+          root_node << build_request_header(PICKUP_XMLNS)
+          
+          #version
+          root_node << XmlNode.new('Version', PICKUP_XMLNS) do |version_node|
+            version_node << XmlNode.new('ServiceId', 'disp')
+            version_node << XmlNode.new('Major', 3)
+            version_node << XmlNode.new('Intermediate', 0)
+            version_node << XmlNode.new('Minor', 1)
+          end
+
+          #pickup_address
+          root_node << build_location_node_full(pickup_address, 'PickupAddress', PICKUP_XMLNS)
+          
+          #request types
+          request_types.each {|rt| root_node << XmlNode.new('PickupRequestType', PICKUP_REQUEST_TYPES[rt] || rt.capitalize, PICKUP_XMLNS)}
+
+          #dispatch date
+          root_node << XmlNode.new('DispatchDate', dispatch_date, PICKUP_XMLNS)
+
+          #package ready time
+          root_node << XmlNode.new('PackageReadyTime', package_ready_time, PICKUP_XMLNS)
+
+          #customer close time
+          root_node << XmlNode.new('CustomerCloseTime', customer_close_time.strftime('%H:%M:%S'), PICKUP_XMLNS)
+
+          #carriers
+          carriers.each { |c| root_node << XmlNode.new('Carriers', c, PICKUP_XMLNS)}
+
+          #shipment attributes
+          imperial = ['US','LR','MM'].include?(pickup_address.country_code(:alpha2))
+          root_node << build_package_node(package, 'ShipmentAttributes', PICKUP_XMLNS)
+        end
+        xml_request.to_s
+      end
+
       def build_validate_address_request(addresses_to_validate, options={})
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
@@ -193,15 +250,19 @@ module ActiveMerchant
       def build_location_node_for_validation(address_id, location) 
         XmlNode.new('AddressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
           av_node << XmlNode.new('AddressId', address_id)
-          av_node << XmlNode.new('Address') do |address_node|
-            [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
-              address_node << XmlNode.new('StreetLines', s_line)
-            end
-            address_node << XmlNode.new('City', location.city)
-            address_node << XmlNode.new('StateOrProvinceCode', location.province)
-            address_node << XmlNode.new('PostalCode', location.postal_code)
-            address_node << XmlNode.new('CountryCode', location.country_code(:alpha2))
+          av_node << build_location_node_full(location, 'Address', nil)
+        end
+      end
+
+      def build_location_node_full(location, node_name, xmlns)
+        XmlNode.new(node_name, xmlns) do |address_node|
+          [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
+            address_node << XmlNode.new('StreetLines', s_line)
           end
+          address_node << XmlNode.new('City', location.city)
+          address_node << XmlNode.new('StateOrProvinceCode', location.province)
+          address_node << XmlNode.new('PostalCode', location.postal_code)
+          address_node << XmlNode.new('CountryCode', location.country_code(:alpha2))
         end
       end
 
@@ -238,24 +299,28 @@ module ActiveMerchant
             rs << XmlNode.new('RateRequestTypes', 'ACCOUNT')
             rs << XmlNode.new('PackageCount', packages.size)
             packages.each do |pkg|
-              rs << XmlNode.new('RequestedPackages') do |rps|
-                rps << XmlNode.new('Weight') do |tw|
-                  tw << XmlNode.new('Units', imperial ? 'LB' : 'KG')
-                  tw << XmlNode.new('Value', [((imperial ? pkg.lbs : pkg.kgs).to_f*1000).round/1000.0, 0.1].max)
-                end
-                rps << XmlNode.new('Dimensions') do |dimensions|
-                  [:length,:width,:height].each do |axis|
-                    value = ((imperial ? pkg.inches(axis) : pkg.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
-                    dimensions << XmlNode.new(axis.to_s.capitalize, value.ceil)
-                  end
-                  dimensions << XmlNode.new('Units', imperial ? 'IN' : 'CM')
-                end
-              end
+              rs << build_package_node(pkg, 'RequestedPackages', imperial)
             end
             
           end
         end
         xml_request.to_s
+      end
+
+      def build_package_node(package, node_name, imperial, xmlns=nil)
+        XmlNode.new(node_name, xmlns) do |rps|
+          rps << XmlNode.new('Weight') do |tw|
+            tw << XmlNode.new('Units', imperial ? 'LB' : 'KG')
+            tw << XmlNode.new('Value', [((imperial ? package.lbs : package.kgs).to_f*1000).round/1000.0, 0.1].max)
+          end
+          rps << XmlNode.new('Dimensions') do |dimensions|
+            [:length,:width,:height].each do |axis|
+              value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
+              dimensions << XmlNode.new(axis.to_s.capitalize, value.ceil)
+            end
+            dimensions << XmlNode.new('Units', imperial ? 'IN' : 'CM')
+          end
+        end
       end
       
       def build_tracking_request(tracking_number, options={})

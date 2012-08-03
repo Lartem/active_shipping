@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<v3:PickupAvailabilityReply xmlns:v3="http://fedex.com/ws/courierdispatch/v3" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+<v3:HighestSeverity xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">SUCCESS</v3:HighestSeverity>
+  <v3:Notifications xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Severity>SUCCESS</v3:Severity>
+    <v3:Source>disp</v3:Source>
+    <v3:Code>0000</v3:Code>
+    <v3:Message>Success</v3:Message>
+    <v3:LocalizedMessage>Success</v3:LocalizedMessage>
+  </v3:Notifications>
+  <v3:TransactionDetail xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:CustomerTransactionId>ActiveShipping</v3:CustomerTransactionId>
+  </v3:TransactionDetail>
+  <Version xmlns="http://fedex.com/ws/courierdispatch/v3" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <ServiceId>disp</ServiceId>
+    <Major>3</Major>
+    <Intermediate>0</Intermediate>
+    <Minor>1</Minor>
+  </Version>
+  <v3:RequestTimestamp xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">2012-08-03T02:08:00</v3:RequestTimestamp>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-20</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-20</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-20</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-20</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-21</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-21</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-21</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-21</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-22</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>SAME_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-22</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-22</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+  <v3:Options xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <v3:Carrier>FDXE</v3:Carrier>
+    <v3:ScheduleDay>FUTURE_DAY</v3:ScheduleDay>
+    <v3:Available>true</v3:Available>
+    <v3:PickupDate>2012-08-22</v3:PickupDate>
+    <v3:CutOffTime>17:00:00</v3:CutOffTime>
+    <v3:AccessTime>PT1H30M</v3:AccessTime>
+    <v3:ResidentialAvailable>false</v3:ResidentialAvailable>
+  </v3:Options>
+</v3:PickupAvailabilityReply>

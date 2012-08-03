@@ -168,14 +168,15 @@ module ActiveMerchant
         check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, shipment_attributes)
         p check_pickup_request
-        response = commit(save_request(check_pickup_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(check_pickup_request), (options[:test] || false))#.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        p response
         parse_pickup_response(response, options)        
       end
 
       protected
       def build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, packages)
-        xml_request = XmlNode.new('AddressValidationRequest', 
+        xml_request = XmlNode.new('PickupAvailabilityRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
           'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
@@ -200,7 +201,7 @@ module ActiveMerchant
           root_node << XmlNode.new('DispatchDate', dispatch_date.strftime('%Y-%m-%d'), PICKUP_XMLNS)
 
           #package ready time
-          root_node << XmlNode.new('PackageReadyTime', package_ready_time, PICKUP_XMLNS)
+          root_node << XmlNode.new('PackageReadyTime', package_ready_time.strftime('%H:%M:%S'), PICKUP_XMLNS)
 
           #customer close time
           root_node << XmlNode.new('CustomerCloseTime', customer_close_time.strftime('%H:%M:%S'), PICKUP_XMLNS)
@@ -210,7 +211,7 @@ module ActiveMerchant
 
           #shipment attributes
           imperial = ['US','LR','MM'].include?(pickup_address.country_code(:alpha2))
-          packages.each {|p| root_node << build_package_node(p, 'ShipmentAttributes', imperial, PICKUP_XMLNS)}
+          packages.each {|p| root_node << build_package_node(p, 'ShipmentAttributes', imperial, PICKUP_XMLNS, false)}
         end
         xml_request.to_s
       end
@@ -309,18 +310,20 @@ module ActiveMerchant
         xml_request.to_s
       end
 
-      def build_package_node(package, node_name, imperial, xmlns=nil)
+      def build_package_node(package, node_name, imperial, xmlns=nil, include_dimensions=true)
         XmlNode.new(node_name, xmlns) do |rps|
           rps << XmlNode.new('Weight') do |tw|
             tw << XmlNode.new('Units', imperial ? 'LB' : 'KG')
             tw << XmlNode.new('Value', [((imperial ? package.lbs : package.kgs).to_f*1000).round/1000.0, 0.1].max)
           end
-          rps << XmlNode.new('Dimensions') do |dimensions|
-            [:length,:width,:height].each do |axis|
-              value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
-              dimensions << XmlNode.new(axis.to_s.capitalize, value.ceil)
+          if include_dimensions 
+            rps << XmlNode.new('Dimensions') do |dimensions|
+              [:length,:width,:height].each do |axis|
+                value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
+                dimensions << XmlNode.new(axis.to_s.capitalize, value.ceil)
+              end
+              dimensions << XmlNode.new('Units', imperial ? 'IN' : 'CM')
             end
-            dimensions << XmlNode.new('Units', imperial ? 'IN' : 'CM')
           end
         end
       end
@@ -551,6 +554,11 @@ module ActiveMerchant
       end
 
       def parse_pickup_response(response, options)
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['AddressValidationReply']
+        success = response_success?(xml)
+        message = response_message(xml)
+
       end
 
       def response_status_node(document)

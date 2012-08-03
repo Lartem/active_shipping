@@ -1,4 +1,4 @@
-<AddressValidationRequest xmlns='http://fedex.com/ws/courierdispatch/v3' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+<PickupAvailabilityRequest xmlns='http://fedex.com/ws/courierdispatch/v3' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
   <WebAuthenticationDetail xmlns='http://fedex.com/ws/courierdispatch/v3'>
     <UserCredential>
       <Key>1111</Key>
@@ -43,4 +43,4 @@
       <Units>IN</Units>
     </Dimensions>
   </ShipmentAttributes>
-</AddressValidationRequest>
+</PickupAvailabilityRequest>

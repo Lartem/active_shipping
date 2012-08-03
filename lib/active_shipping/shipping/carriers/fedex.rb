@@ -168,7 +168,7 @@ module ActiveMerchant
         check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, shipment_attributes)
         p check_pickup_request
-        response = commit(save_request(check_pickup_request), (options[:test] || false))#.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(check_pickup_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         p response
         parse_pickup_response(response, options)        
       end

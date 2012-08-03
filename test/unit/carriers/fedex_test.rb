@@ -216,11 +216,22 @@ class FedExTest < Test::Unit::TestCase
     assert_equal [delivery_date] * 2, rate_estimates.rates[0].delivery_range
   end
 
-  def test_build_address_validation_request
+  def test_address_validation_request
     expected_request = xml_fixture('fedex/ottawa_and_beverly_hills_address_validation_request')
     mock_response = xml_fixture('fedex/ottawa_and_beverly_hills_address_validation_response')
     Time.any_instance.expects(:to_xml_value).returns("2009-07-20T12:01:55-04:00")
     @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
     validated_addresses = @carrier.validate_addresses({ 'address_from' => @locations[:ottawa], 'address_to' => @locations[:beverly_hills]}, :test => true)
+  end
+
+  def test_pickup_availability_request
+    expected_request = xml_fixture('fedex/ottawa_pickup_availability_request')
+    mock_response = xml_fixture('fedex/ottawa_pickup_availability_response')
+    
+    #Time.any_instance.expects(:to_xml_value).returns("2009-07-20T12:01:55-04:00")
+    @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
+    pickup_response = @carrier.check_pickup_availability(@locations[:ottawa], 
+      [:same_day, :future_day], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
+      Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => true)
   end
 end

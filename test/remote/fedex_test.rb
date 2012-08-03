@@ -166,7 +166,7 @@ class FedExTest < Test::Unit::TestCase
     response = nil
     assert_nothing_raised do
       response = @carrier_prod.check_pickup_availability(@locations[:ottawa], 
-        ['same_day', 'future_day'], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
+        [:same_day, :future_day], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
         Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => false)
     end
   end

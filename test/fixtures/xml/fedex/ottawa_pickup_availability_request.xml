@@ -28,19 +28,13 @@
   <PickupRequestType xmlns='http://fedex.com/ws/courierdispatch/v3'>SAME_DAY</PickupRequestType>
   <PickupRequestType xmlns='http://fedex.com/ws/courierdispatch/v3'>FUTURE_DAY</PickupRequestType>
   <DispatchDate xmlns='http://fedex.com/ws/courierdispatch/v3'>2012-08-20</DispatchDate>
-  <PackageReadyTime xmlns='http://fedex.com/ws/courierdispatch/v3'>2012-08-10T16:00:00+07:00</PackageReadyTime>
+  <PackageReadyTime xmlns='http://fedex.com/ws/courierdispatch/v3'>16:00:00</PackageReadyTime>
   <CustomerCloseTime xmlns='http://fedex.com/ws/courierdispatch/v3'>16:00:00</CustomerCloseTime>
   <Carriers xmlns='http://fedex.com/ws/courierdispatch/v3'>FDXE</Carriers>
   <ShipmentAttributes xmlns='http://fedex.com/ws/courierdispatch/v3'>
     <Weight>
-      <Units>LB</Units>
-      <Value>7.5</Value>
+      <Units>KG</Units>
+      <Value>3.402</Value>
     </Weight>
-    <Dimensions>
-      <Length>15</Length>
-      <Width>10</Width>
-      <Height>5</Height>
-      <Units>IN</Units>
-    </Dimensions>
   </ShipmentAttributes>
 </PickupAvailabilityRequest>

@@ -121,10 +121,10 @@ module ActiveMerchant
         'TR' => :transfer
       })
 
-      PICKUP_REQUEST_TYPES = {
-        'same_day' => 'SAME_DAY',
-        'future_day' => 'FUTURE_DAY'
-      }
+      PICKUP_REQUEST_TYPES = HashWithIndifferentAccess.new({
+        :same_day => 'SAME_DAY',
+        :future_day => 'FUTURE_DAY'
+      })
 
       PICKUP_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
 
@@ -167,9 +167,7 @@ module ActiveMerchant
         options = @options.update(options)
         check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, shipment_attributes)
-        p check_pickup_request
         response = commit(save_request(check_pickup_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        p response
         parse_pickup_response(response, options)        
       end
 
@@ -540,7 +538,7 @@ module ActiveMerchant
           :xml => response,
           :request => last_request,
           :addresses => addresses,
-          :parsed_results => parsed_results
+          :parsed_av_results => parsed_results
         )
       end
 
@@ -555,10 +553,27 @@ module ActiveMerchant
 
       def parse_pickup_response(response, options)
         xml = REXML::Document.new(response)
-        root_node = xml.elements['AddressValidationReply']
+        root_node = xml.elements['PickupAvailabilityReply']
         success = response_success?(xml)
         message = response_message(xml)
 
+        pickup_options = []
+        root_node.elements.each('Options') do |p_options|
+          carr = CarrierCodes.invert[p_options.get_text('Carrier').to_s]
+          schedule_day = PICKUP_REQUEST_TYPES.invert[p_options.get_text('ScheduleDay').to_s]
+          available = p_options.get_text('Available').to_s == "true"
+          pickup_date = Date.parse(p_options.get_text('PickupDate').to_s)
+          cutoff_time = p_options.get_text('CutOffTime').to_s
+          access_time = p_options.get_text('AccessTime').to_s
+          residential_available = p_options.get_text('ResidentialAvailable').to_s == "true"
+          pickup_options << FedexPickupOptions.new(carr, schedule_day, available, pickup_date, cutoff_time, access_time, residential_available)
+        end
+        PickupAvailability.new(success, message, Hash.from_xml(response),
+          :carrier => @@name,
+          :xml => response,
+          :request => last_request,
+          :pickup_options => pickup_options
+        )
       end
 
       def response_status_node(document)

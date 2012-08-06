@@ -127,6 +127,8 @@ module ActiveMerchant
       })
 
       PICKUP_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
+      DISPATCH_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
+      VALIDATION_XMLNS = {'xmlns' => 'http://fedex.com/ws/addressvalidation/v2'}
 
       def self.service_name_for_code(service_code)
         ServiceTypes[service_code] || "FedEx #{service_code.titleize.sub(/Fedex /, '')}"
@@ -171,7 +173,54 @@ module ActiveMerchant
         parse_pickup_response(response, options)        
       end
 
+      def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type, options={})
+        options = @options.update(options)
+        courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type)
+        p courier_dispatch_request
+        response = commit(save_request(check_pickup_request), (options[:test] || false))
+        p resonse
+        response.gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_courier_dispatch_response(response, options)
+      end
+
       protected
+      def build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type)
+        xml_request = XmlNode.new('CourierDispatchRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
+
+          root_node << build_request_header(DISPATCH_XMLNS)
+
+          #version
+          root_node << build_version_node('disp', 3, 0, 1, DISPATCH_XMLNS)
+                
+          # origin detail
+          root_node << XmlNode.new('OriginDetail', DISPATCH_XMLNS) do |origin_detail|
+            # pickup location
+            # contact
+            origin_detail << XmlNode.new('Contact') do |c|
+              # {:person_name => Name, :company_name => Company Name} ==> PersonName, CompanyName 
+              contact.keys.each do |k|
+                node_name = k.to_s.split('_').map { |w| w.capitalize }.join
+                c << XmlNode.new(node_name, contact[k])
+              end
+            end
+
+            # address
+            origin_detail << build_location_node_full(location, 'Address')
+            origin_detail << XmlNode.new('ReadyTimestamp', ready_timestamp)
+            origin_detail << XmlNode.new('CompanyCloseTime', company_close_time.strftime('%H:%M:%S'))
+          end
+          # package count
+          root_node << XmlNode.new('PackageCount', packages.size)
+
+          #total weight
+          imperial = ['US','LR','MM'].include?(pickup_address.country_code(:alpha2))
+          packages.each {|p| root_node << build_package_node(p, 'TotalWeight', imperial, DISPATCH_XMLNS, false)}
+          root_node << XmlNode.new('CarrierCode', carrier_code, DISPATCH_XMLNS)
+      end
+
       def build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, packages)
         xml_request = XmlNode.new('PickupAvailabilityRequest', 
@@ -182,12 +231,7 @@ module ActiveMerchant
           root_node << build_request_header(PICKUP_XMLNS)
 
           #version
-          root_node << XmlNode.new('Version', PICKUP_XMLNS) do |version_node|
-            version_node << XmlNode.new('ServiceId', 'disp')
-            version_node << XmlNode.new('Major', 3)
-            version_node << XmlNode.new('Intermediate', 0)
-            version_node << XmlNode.new('Minor', 1)
-          end
+          root_node << build_version_node('disp', 3, 0, 1, PICKUP_XMLNS)
 
           #pickup_address
           root_node << build_location_node_full(pickup_address, 'PickupAddress', PICKUP_XMLNS)
@@ -218,22 +262,17 @@ module ActiveMerchant
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-          'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |root_node|
-          root_node << build_request_header({'xmlns'=>'http://fedex.com/ws/addressvalidation/v2'})
+          VALIDATION_XMLNS) do |root_node|
+          root_node << build_request_header(VALIDATION_XMLNS)
 
           #version
-          root_node << XmlNode.new('Version', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |version_node|
-            version_node << XmlNode.new('ServiceId', 'aval')
-            version_node << XmlNode.new('Major', 2)
-            version_node << XmlNode.new('Intermediate', 0)
-            version_node << XmlNode.new('Minor', 0)
-          end
+          root_node << build_version_node('aval', 2, 0, 0, VALIDATION_XMLNS)
 
           #request timestamp
           root_node << XmlNode.new('RequestTimestamp', Time.now)
 
           #options
-          root_node << XmlNode.new('Options', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |options_node|
+          root_node << XmlNode.new('Options', VALIDATION_XMLNS) do |options_node|
             options_node << XmlNode.new('VerifyAddresses', true)
             options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
             options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
@@ -249,13 +288,13 @@ module ActiveMerchant
       end
 
       def build_location_node_for_validation(address_id, location) 
-        XmlNode.new('AddressesToValidate', 'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |av_node|
+        XmlNode.new('AddressesToValidate', VALIDATION_XMLNS) do |av_node|
           av_node << XmlNode.new('AddressId', address_id)
-          av_node << build_location_node_full(location, 'Address', nil)
+          av_node << build_location_node_full(location, 'Address')
         end
       end
 
-      def build_location_node_full(location, node_name, xmlns)
+      def build_location_node_full(location, node_name, xmlns=nil)
         XmlNode.new(node_name, xmlns) do |address_node|
           [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
             address_node << XmlNode.new('StreetLines', s_line)
@@ -274,13 +313,8 @@ module ActiveMerchant
           root_node << build_request_header
 
           # Version
-          root_node << XmlNode.new('Version') do |version_node|
-            version_node << XmlNode.new('ServiceId', 'crs')
-            version_node << XmlNode.new('Major', '6')
-            version_node << XmlNode.new('Intermediate', '0')
-            version_node << XmlNode.new('Minor', '0')
-          end
-          
+          root_node << build_version_node('crs', 6, 0, 0) 
+
           # Returns delivery dates
           root_node << XmlNode.new('ReturnTransitAndCommit', true)
           # Returns saturday delivery shipping options when available
@@ -331,13 +365,8 @@ module ActiveMerchant
           root_node << build_request_header
           
           # Version
-          root_node << XmlNode.new('Version') do |version_node|
-            version_node << XmlNode.new('ServiceId', 'trck')
-            version_node << XmlNode.new('Major', '3')
-            version_node << XmlNode.new('Intermediate', '0')
-            version_node << XmlNode.new('Minor', '0')
-          end
-          
+          root_node << build_version_node('trck', 3, 0, 0)
+
           root_node << XmlNode.new('PackageIdentifier') do |package_node|
             package_node << XmlNode.new('Value', tracking_number)
             package_node << XmlNode.new('Type', PackageIdentifierTypes[options['package_identifier_type'] || 'tracking_number'])
@@ -375,10 +404,18 @@ module ActiveMerchant
           xml_node << XmlNode.new('Address') do |address_node|
             address_node << XmlNode.new('PostalCode', location.postal_code)
             address_node << XmlNode.new("CountryCode", location.country_code(:alpha2))
-
             address_node << XmlNode.new("Residential", true) unless location.commercial?
           end
         end
+      end
+
+      def build_version_node(service_id, major, intermediate, minor, xmlns=nil)
+          XmlNode.new('Version', xmlns) do |version_node|
+            version_node << XmlNode.new('ServiceId', service_id)
+            version_node << XmlNode.new('Major', major)
+            version_node << XmlNode.new('Intermediate', intermediate)
+            version_node << XmlNode.new('Minor', minor)
+          end        
       end
       
       def parse_rate_response(origin, destination, packages, response, options)
@@ -574,6 +611,10 @@ module ActiveMerchant
           :request => last_request,
           :pickup_options => pickup_options
         )
+      end
+
+      def parse_courier_dispatch_response(response, options)
+        #TODO
       end
 
       def response_status_node(document)

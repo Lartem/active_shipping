@@ -170,4 +170,14 @@ class FedExTest < Test::Unit::TestCase
         Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => false)
     end
   end
+
+  def test_courier_dispatch
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.courier_dispatch(
+        {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, 
+        @locations[:beverly_hills], Time.new(2012, 8, 8, 10), Time.new(1970, 1, 1, 16), 
+        1, @packages.values_at(:american_wii)[0], ActiveMerchant::Shipping::FedEx::CarrierCodes["fedex_express"], :test => true)
+    end    
+  end
 end

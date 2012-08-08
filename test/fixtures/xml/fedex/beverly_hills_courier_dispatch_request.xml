@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CourierDispatchRequest xmlns="http://fedex.com/ws/courierdispatch/v3" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <WebAuthenticationDetail xmlns="http://fedex.com/ws/courierdispatch/v3">
+      <UserCredential>
+         <Key>1111</Key>
+         <Password>2222</Password>
+      </UserCredential>
+   </WebAuthenticationDetail>
+   <ClientDetail>
+      <AccountNumber>3333</AccountNumber>
+      <MeterNumber>4444</MeterNumber>
+   </ClientDetail>
+   <TransactionDetail>
+      <CustomerTransactionId>ActiveShipping</CustomerTransactionId>
+   </TransactionDetail>
+   <Version xmlns="http://fedex.com/ws/courierdispatch/v3">
+      <ServiceId>disp</ServiceId>
+      <Major>3</Major>
+      <Intermediate>0</Intermediate>
+      <Minor>1</Minor>
+   </Version>
+   <OriginDetail xmlns="http://fedex.com/ws/courierdispatch/v3">
+      <PickupLocation>
+         <Contact>
+            <PersonName>Nikita Mershmall</PersonName>
+            <CompanyName>Drup inc</CompanyName>
+            <PhoneNumber>2513851321</PhoneNumber>
+         </Contact>
+         <Address>
+            <StreetLines>455 N. Rexford Dr.</StreetLines>
+            <StreetLines>3rd Floor</StreetLines>
+            <City>Beverly Hills</City>
+            <StateOrProvinceCode>CA</StateOrProvinceCode>
+            <PostalCode>90210</PostalCode>
+            <CountryCode>US</CountryCode>
+         </Address>
+      </PickupLocation>
+      <ReadyTimestamp>2012-08-08T10:00:00+07:00</ReadyTimestamp>
+      <CompanyCloseTime>16:00:00</CompanyCloseTime>
+   </OriginDetail>
+   <PackageCount>1</PackageCount>
+   <TotalWeight xmlns="http://fedex.com/ws/courierdispatch/v3">
+      <Units>LB</Units>
+      <Value>7.5</Value>
+   </TotalWeight>
+   <CarrierCode>FDXE</CarrierCode>
+</CourierDispatchRequest>

@@ -173,18 +173,16 @@ module ActiveMerchant
         parse_pickup_response(response, options)        
       end
 
-      def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type, options={})
+      def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
-        courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type)
+        courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
         p courier_dispatch_request
-        response = commit(save_request(check_pickup_request), (options[:test] || false))
-        p resonse
-        response.gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_courier_dispatch_response(response, options)
       end
 
       protected
-      def build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, packages, carrier_type)
+      def build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, package, carrier_type)
         xml_request = XmlNode.new('CourierDispatchRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
@@ -198,27 +196,35 @@ module ActiveMerchant
           # origin detail
           root_node << XmlNode.new('OriginDetail', DISPATCH_XMLNS) do |origin_detail|
             # pickup location
-            # contact
-            origin_detail << XmlNode.new('Contact') do |c|
-              # {:person_name => Name, :company_name => Company Name} ==> PersonName, CompanyName 
-              contact.keys.each do |k|
-                node_name = k.to_s.split('_').map { |w| w.capitalize }.join
-                c << XmlNode.new(node_name, contact[k])
+            origin_detail << XmlNode.new('PickupLocation') do |p_location|
+              # contact
+              p_location << XmlNode.new('Contact') do |c|
+                # {:person_name => Name, :company_name => Company Name} ==> PersonName, CompanyName 
+                contact.keys.each do |k|
+                  node_name = k.to_s.split('_').map { |w| w.capitalize }.join
+                  c << XmlNode.new(node_name, contact[k])
+                end
               end
-            end
 
-            # address
-            origin_detail << build_location_node_full(location, 'Address')
+              # address
+              p_location << build_location_node_full(pickup_location, 'Address')
+            end
             origin_detail << XmlNode.new('ReadyTimestamp', ready_timestamp)
             origin_detail << XmlNode.new('CompanyCloseTime', company_close_time.strftime('%H:%M:%S'))
           end
           # package count
-          root_node << XmlNode.new('PackageCount', packages.size)
+          root_node << XmlNode.new('PackageCount', package_count)
 
           #total weight
-          imperial = ['US','LR','MM'].include?(pickup_address.country_code(:alpha2))
-          packages.each {|p| root_node << build_package_node(p, 'TotalWeight', imperial, DISPATCH_XMLNS, false)}
-          root_node << XmlNode.new('CarrierCode', carrier_code, DISPATCH_XMLNS)
+          imperial = ['US','LR','MM'].include?(pickup_location.country_code(:alpha2))
+          root_node << XmlNode.new('TotalWeight', DISPATCH_XMLNS) do |tw|
+            tw << XmlNode.new('Units', imperial ? 'LB' : 'KG')
+            tw << XmlNode.new('Value', [((imperial ? package.lbs : package.kgs).to_f*1000).round/1000.0, 0.1].max)
+          end
+
+          root_node << XmlNode.new('CarrierCode', carrier_type, DISPATCH_XMLNS)
+        end
+        xml_request.to_s
       end
 
       def build_pickup_request(pickup_address, request_types, dispatch_date, 
@@ -262,7 +268,7 @@ module ActiveMerchant
         xml_request = XmlNode.new('AddressValidationRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-          VALIDATION_XMLNS) do |root_node|
+          'xmlns' => 'http://fedex.com/ws/addressvalidation/v2') do |root_node|
           root_node << build_request_header(VALIDATION_XMLNS)
 
           #version
@@ -614,7 +620,13 @@ module ActiveMerchant
       end
 
       def parse_courier_dispatch_response(response, options)
-        #TODO
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['CourierDispatchReply']
+        success = response_success?(xml)
+        message = response_message(xml)
+        dispatch_number = root_node.get_text('DispatchConfirmationNumber').to_s
+        location = root_node.get_text('Location').to_s
+        {:dispatch_confirmation_number => dispatch_number, :location => location}
       end
 
       def response_status_node(document)

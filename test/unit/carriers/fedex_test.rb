@@ -227,11 +227,20 @@ class FedExTest < Test::Unit::TestCase
   def test_pickup_availability_request
     expected_request = xml_fixture('fedex/ottawa_pickup_availability_request')
     mock_response = xml_fixture('fedex/ottawa_pickup_availability_response')
-    
-    #Time.any_instance.expects(:to_xml_value).returns("2009-07-20T12:01:55-04:00")
     @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
     pickup_response = @carrier.check_pickup_availability(@locations[:ottawa], 
       [:same_day, :future_day], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
       Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => true)
+  end
+
+  def test_courier_dispatch_request
+    expected_request = xml_fixture('fedex/beverly_hills_courier_dispatch_request')
+    mock_response = xml_fixture('fedex/beverly_hills_courier_dispatch_response')
+    
+    @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
+    dispatch_response = @carrier.courier_dispatch(
+        {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, 
+        @locations[:beverly_hills], Time.new(2012, 8, 8, 10), Time.new(1970, 1, 1, 16), 
+        1, @packages.values_at(:american_wii)[0], ActiveMerchant::Shipping::FedEx::CarrierCodes["fedex_express"], :test => true)
   end
 end

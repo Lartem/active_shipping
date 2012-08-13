@@ -126,9 +126,19 @@ module ActiveMerchant
         :future_day => 'FUTURE_DAY'
       })
 
+      CUSTOMER_REFERENCE_TYPES = HashWithIndifferentAccess.new({
+        :bill => 'BILL_OR_LADING',
+        :customer_reference => 'CUSTOMER_REFERENCE',
+        :invoice => 'INVOICE_NUMBER',
+        :po_number => 'P_O_NUMBER',
+        :shipment_integrity => 'SHIPMENT_INTEGRITY',
+        :store=> 'STORE_NUMBER'
+      })
+
       PICKUP_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
       DISPATCH_XMLNS = {'xmlns' => 'http://fedex.com/ws/courierdispatch/v3'}
       VALIDATION_XMLNS = {'xmlns' => 'http://fedex.com/ws/addressvalidation/v2'}
+      SHIP_XMLNS = {'xmlns' => 'http://fedex.com/ws/ship/v10'}
 
       def self.service_name_for_code(service_code)
         ServiceTypes[service_code] || "FedEx #{service_code.titleize.sub(/Fedex /, '')}"
@@ -176,12 +186,110 @@ module ActiveMerchant
       def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
         courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
-        p courier_dispatch_request
         response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_courier_dispatch_response(response, options)
       end
 
+      # account number & country are not necessary when payment_type=collect (ground)
+      def request_shipping(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
+        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items, options={})
+        options = @options.update(options)
+        shipping_request = build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
+        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items)
+        p shipping_request
+        response = commit(save_request(shipping_request), (options[:test] || false)).gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_shipping_response(response, options)
+      end
+
       protected
+
+      def build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
+        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items)
+        xml_request = XmlNode.new('ProcessShipmentRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/ship/v10') do |root_node|
+
+          root_node << build_request_header(SHIP_XMLNS)
+
+          #version
+          root_node << build_version_node('disp', 3, 0, 1, SHIP_XMLNS)
+
+          # requested shipment
+          root_node << XmlNode.new('RequestedShipment', SHIP_XMLNS) do |ship_node|
+            ship_node << XmlNode.new('ShipTimestamp', ship_timestamp)
+            ship_node << XmlNode.new('DropoffType', dropoff_type)
+            ship_node << XmlNode.new('ServiceType', service_type)
+            ship_node << XmlNode.new('PackagingType', pakaging_type)
+            
+            # shipper
+            ship_node << build_shipper_node('Shipper', shipper_contact, shipper_address)
+
+            #recipient
+            ship_node << build_shipper_node('Recipient', recipient_contact, recipient_address, true)
+
+            #shipping charges
+            ship_node << XmlNode.new('ShippingChargesPayment') do |charges_node|
+              charges_node << XmlNode.new('PaymentType', payment_type)
+              charges_node << XmlNode.new('Payor') do |payor|
+                payor << XmlNode.new('AccountNumber', payor_account_number)
+                payor << XmlNode.new('CountryCode', payor_country_code)
+              end
+            end
+
+            #label specification
+            ship_node << XmlNode.new('LabelSpecification') do |label_node|
+              label_node << XmlNode.new('LabelFormatType', options[:label_format_type] || 'COMMON2D')
+              label_node << XmlNode.new('ImageType', options[:image_type] || 'PDF')
+              label_node << XmlNode.new('CustomerSpecifiedDetail') do |csd|
+                csd << XmlNode.new('DocTabContent') do |dtc|
+                  dtc << XmlNode.new('DocTabContentType', options[:doc_tab_content_type] || 'STANDARD')
+                end
+              end
+            end
+
+            # request type
+            ship_node << XmlNode.new('RateRequestTypes', options[:rate_request_types] || 'ACCOUNT')
+
+            # packages count
+            ship_node << XmlNode.new('PackageCount', package_line_items.size)
+
+            package_line_items.each_with_index do |rpli, idx|
+              ship_node << XmlNode.new('RequestPackageLineItems') do |rpli_node|
+                rpli_node << XmlNode.new('SequenceNumber', idx+1)
+                rpli_node << XmlNode.new('InsuredValue') do |insured_node|
+                  insured_node << XmlNode.new('Currency', rpli[:insured_currency] || 'USD')
+                  insured_node << XmlNode.new('Amount', rpli[:insured_amount] || 100)
+                end
+                rpli_node << XmlNode.new('Weight') do |weight_node|
+                  weight_node << XmlNode.new('Units', rpli[:weight_units])
+                  weight_node << XmlNode.new('Value', rpli[:weight_value])
+                end
+                rpli_node << XmlNode.new('ItemDescription', rpli[:item_description])
+                rpli_node << XmlNode.new('CustomerReferences') do |cr|
+                  rpli_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_type] || CUSTOMER_REFERENCE_TYPES[:customer_reference])
+                  rpli_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_value])
+                end
+              end
+            end
+          end
+        end
+      end
+
+      def build_shipper_node(node_name, shipper_contact, shipper_location, residential=nil) 
+        XmlNode.new(node_name) do |shipper_node|
+          # contact
+          shipper_node << XmlNode.new('Contact') do |contact_node|
+            shipper_contact.keys.each do |k|
+              node_name = k.to_s.split('_').map { |w| w.capitalize }.join
+              contact_node << XmlNode.new(node_name, contact[k])
+            end
+          end
+          # address
+          shipper_node << build_location_node_full(shipper_address, 'Address', residential) 
+        end
+      end
+
       def build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, package, carrier_type)
         xml_request = XmlNode.new('CourierDispatchRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
@@ -300,7 +408,7 @@ module ActiveMerchant
         end
       end
 
-      def build_location_node_full(location, node_name, xmlns=nil)
+      def build_location_node_full(location, node_name, xmlns=nil, residential=nil)
         XmlNode.new(node_name, xmlns) do |address_node|
           [location.address1, location.address2, location.address3].reject {|e| e.blank?}.each do |s_line|
             address_node << XmlNode.new('StreetLines', s_line)
@@ -309,6 +417,7 @@ module ActiveMerchant
           address_node << XmlNode.new('StateOrProvinceCode', location.province)
           address_node << XmlNode.new('PostalCode', location.postal_code)
           address_node << XmlNode.new('CountryCode', location.country_code(:alpha2))
+          address_node << XmlNode.new('Residential', residential) if residential != nil
         end
       end
 

@@ -738,6 +738,9 @@ module ActiveMerchant
         {:dispatch_confirmation_number => dispatch_number, :location => location}
       end
 
+      def parse_shipping_response 
+      end
+
       def response_status_node(document)
         document.elements['/*/Notifications/']
       end

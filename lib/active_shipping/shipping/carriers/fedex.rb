@@ -186,41 +186,43 @@ module ActiveMerchant
       def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
         courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
-        response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_courier_dispatch_response(response, options)
       end
 
       # account number & country are not necessary when payment_type=collect (ground)
       def request_shipping(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
-        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items, options={})
+        recipient_contact, recipient_address, payor_country_code, package_line_items, options={})
         options = @options.update(options)
         shipping_request = build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
-        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items)
+        recipient_contact, recipient_address, payor_country_code, package_line_items, options)
         p shipping_request
-        response = commit(save_request(shipping_request), (options[:test] || false)).gsub!(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        r = commit(save_request(shipping_request), (options[:test] || false))
+        p r
+        response = r.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_shipping_response(response, options)
       end
 
       protected
 
       def build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
-        recipient_contact, recipient_address, payment_type, payor_account_number, payor_country_code, package_line_items)
+        recipient_contact, recipient_address, payor_country_code, package_line_items, options={})
+
         xml_request = XmlNode.new('ProcessShipmentRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
           'xmlns' => 'http://fedex.com/ws/ship/v10') do |root_node|
 
           root_node << build_request_header(SHIP_XMLNS)
-
           #version
-          root_node << build_version_node('disp', 3, 0, 1, SHIP_XMLNS)
+          root_node << build_version_node('ship', 10, 0, 0, SHIP_XMLNS)
 
           # requested shipment
           root_node << XmlNode.new('RequestedShipment', SHIP_XMLNS) do |ship_node|
             ship_node << XmlNode.new('ShipTimestamp', ship_timestamp)
             ship_node << XmlNode.new('DropoffType', dropoff_type)
             ship_node << XmlNode.new('ServiceType', service_type)
-            ship_node << XmlNode.new('PackagingType', pakaging_type)
+            ship_node << XmlNode.new('PackagingType', packaging_type)
             
             # shipper
             ship_node << build_shipper_node('Shipper', shipper_contact, shipper_address)
@@ -230,10 +232,10 @@ module ActiveMerchant
 
             #shipping charges
             ship_node << XmlNode.new('ShippingChargesPayment') do |charges_node|
-              charges_node << XmlNode.new('PaymentType', payment_type)
+              charges_node << XmlNode.new('PaymentType', 'THIRD_PARTY')
               charges_node << XmlNode.new('Payor') do |payor|
-                payor << XmlNode.new('AccountNumber', payor_account_number)
-                payor << XmlNode.new('CountryCode', payor_country_code)
+                payor << XmlNode.new('AccountNumber', options[:account])
+                payor << XmlNode.new('CountryCode', 'US')
               end
             end
 
@@ -255,7 +257,7 @@ module ActiveMerchant
             ship_node << XmlNode.new('PackageCount', package_line_items.size)
 
             package_line_items.each_with_index do |rpli, idx|
-              ship_node << XmlNode.new('RequestPackageLineItems') do |rpli_node|
+              ship_node << XmlNode.new('RequestedPackageLineItems') do |rpli_node|
                 rpli_node << XmlNode.new('SequenceNumber', idx+1)
                 rpli_node << XmlNode.new('InsuredValue') do |insured_node|
                   insured_node << XmlNode.new('Currency', rpli[:insured_currency] || 'USD')
@@ -266,27 +268,28 @@ module ActiveMerchant
                   weight_node << XmlNode.new('Value', rpli[:weight_value])
                 end
                 rpli_node << XmlNode.new('ItemDescription', rpli[:item_description])
-                rpli_node << XmlNode.new('CustomerReferences') do |cr|
-                  rpli_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_type] || CUSTOMER_REFERENCE_TYPES[:customer_reference])
-                  rpli_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_value])
+                rpli_node << XmlNode.new('CustomerReferences') do |cr_node|
+                  cr_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_type] || CUSTOMER_REFERENCE_TYPES[:customer_reference])
+                  cr_node << XmlNode.new('Value', rpli[:customer_reference_value])
                 end
               end
             end
           end
         end
+        xml_request.to_s
       end
 
-      def build_shipper_node(node_name, shipper_contact, shipper_location, residential=nil) 
+      def build_shipper_node(node_name, contact, location, residential=nil) 
         XmlNode.new(node_name) do |shipper_node|
           # contact
           shipper_node << XmlNode.new('Contact') do |contact_node|
-            shipper_contact.keys.each do |k|
+            contact.keys.each do |k|
               node_name = k.to_s.split('_').map { |w| w.capitalize }.join
               contact_node << XmlNode.new(node_name, contact[k])
             end
           end
           # address
-          shipper_node << build_location_node_full(shipper_address, 'Address', residential) 
+          shipper_node << build_location_node_full(location, 'Address', nil, residential) 
         end
       end
 
@@ -738,7 +741,8 @@ module ActiveMerchant
         {:dispatch_confirmation_number => dispatch_number, :location => location}
       end
 
-      def parse_shipping_response 
+      def parse_shipping_response(response, options)
+        p response
       end
 
       def response_status_node(document)

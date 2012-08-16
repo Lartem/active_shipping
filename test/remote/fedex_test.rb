@@ -180,4 +180,14 @@ class FedExTest < Test::Unit::TestCase
         1, @packages.values_at(:american_wii)[0], ActiveMerchant::Shipping::FedEx::CarrierCodes["fedex_express"], :test => true)
     end    
   end
+
+  def test_shipping
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.request_shipping(Time.new(2012, 8, 16, 17), 'REQUEST_COURIER', 'FEDEX_2_DAY', 'FEDEX_ENVELOPE', 
+        {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, @locations[:beverly_hills], 
+        {:person_name=>'Shiro Nakamuro', :company_name=>'Drop inc', :phone_number=>'1513851300'}, @locations[:new_york], 'US', 
+        [{:weight_units=>'LB', :weight_value=>'0.5', :item_description=>'Letter', :customer_reference_value=>'SM-US-000000102'}], :test=>true)
+    end
+  end
 end

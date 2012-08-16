@@ -1,0 +1,92 @@
+<ProcessShipmentRequest xmlns='http://fedex.com/ws/ship/v10' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+  <WebAuthenticationDetail xmlns='http://fedex.com/ws/ship/v10'>
+    <UserCredential>
+      <Key>1111</Key>
+      <Password>2222</Password>
+    </UserCredential>
+  </WebAuthenticationDetail>
+  <ClientDetail>
+    <AccountNumber>3333</AccountNumber>
+    <MeterNumber>4444</MeterNumber>
+  </ClientDetail>
+  <TransactionDetail>
+    <CustomerTransactionId>ActiveShipping</CustomerTransactionId>
+  </TransactionDetail>
+  <Version xmlns='http://fedex.com/ws/ship/v10'>
+    <ServiceId>ship</ServiceId>
+    <Major>10</Major>
+    <Intermediate>0</Intermediate>
+    <Minor>0</Minor>
+  </Version>
+  <RequestedShipment xmlns='http://fedex.com/ws/ship/v10'>
+    <ShipTimestamp>2012-08-15T17:00:00+07:00</ShipTimestamp>
+    <DropoffType>REQUEST_COURIER</DropoffType>
+    <ServiceType>FEDEX_2_DAY</ServiceType>
+    <PackagingType>FEDEX_ENVELOPE</PackagingType>
+    <Shipper>
+      <Contact>
+        <PersonName>Nikita Mershmall</PersonName>
+        <CompanyName>Drup inc</CompanyName>
+        <PhoneNumber>2513851321</PhoneNumber>
+      </Contact>
+      <Address>
+        <StreetLines>455 N. Rexford Dr.</StreetLines>
+        <StreetLines>3rd Floor</StreetLines>
+        <City>Beverly Hills</City>
+        <StateOrProvinceCode>CA</StateOrProvinceCode>
+        <PostalCode>90210</PostalCode>
+        <CountryCode>US</CountryCode>
+      </Address>
+    </Shipper>
+    <Recipient>
+      <Contact>
+        <PersonName>Shiro Nakamuro</PersonName>
+        <CompanyName>Drop inc</CompanyName>
+        <PhoneNumber>1513851300</PhoneNumber>
+      </Contact>
+      <Address>
+        <StreetLines>780 3rd Avenue</StreetLines>
+        <StreetLines>Suite  2601</StreetLines>
+        <City>New York</City>
+        <StateOrProvinceCode>NY</StateOrProvinceCode>
+        <PostalCode>10017</PostalCode>
+        <CountryCode>US</CountryCode>
+        <Residential>true</Residential>
+      </Address>
+    </Recipient>
+    <ShippingChargesPayment>
+      <PaymentType>THIRD_PARTY</PaymentType>
+      <Payor>
+        <AccountNumber>000000000</AccountNumber>
+        <CountryCode>US</CountryCode>
+      </Payor>
+    </ShippingChargesPayment>
+    <LabelSpecification>
+      <LabelFormatType>COMMON2D</LabelFormatType>
+      <ImageType>PDF</ImageType>
+      <CustomerSpecifiedDetail>
+        <DocTabContent>
+          <DocTabContentType>STANDARD</DocTabContentType>
+        </DocTabContent>
+      </CustomerSpecifiedDetail>
+    </LabelSpecification>
+    <RateRequestTypes>ACCOUNT</RateRequestTypes>
+    <PackageCount>1</PackageCount>
+    <RequestedPackageLineItems>
+      <SequenceNumber>1</SequenceNumber>
+      <InsuredValue>
+        <Currency>USD</Currency>
+        <Amount>100</Amount>
+      </InsuredValue>
+      <Weight>
+        <Units>LB</Units>
+        <Value>0.5</Value>
+      </Weight>
+      <ItemDescription>Letter</ItemDescription>
+      <CustomerReferences>
+        <CustomerReferenceType>CUSTOMER_REFERENCE</CustomerReferenceType>
+        <Value>SM-US-000000102</Value>
+      </CustomerReferences>
+    </RequestedPackageLineItems>
+  </RequestedShipment>
+</ProcessShipmentRequest>

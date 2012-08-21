@@ -19,7 +19,7 @@
     <Minor>0</Minor>
   </Version>
   <RequestedShipment xmlns='http://fedex.com/ws/ship/v10'>
-    <ShipTimestamp>2012-08-15T17:00:00+07:00</ShipTimestamp>
+    <ShipTimestamp>2012-08-16T17:00:00+07:00</ShipTimestamp>
     <DropoffType>REQUEST_COURIER</DropoffType>
     <ServiceType>FEDEX_2_DAY</ServiceType>
     <PackagingType>FEDEX_ENVELOPE</PackagingType>
@@ -57,7 +57,7 @@
     <ShippingChargesPayment>
       <PaymentType>THIRD_PARTY</PaymentType>
       <Payor>
-        <AccountNumber>000000000</AccountNumber>
+        <AccountNumber>3333</AccountNumber>
         <CountryCode>US</CountryCode>
       </Payor>
     </ShippingChargesPayment>

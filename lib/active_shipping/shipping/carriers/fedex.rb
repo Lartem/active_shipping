@@ -140,6 +140,22 @@ module ActiveMerchant
       VALIDATION_XMLNS = {'xmlns' => 'http://fedex.com/ws/addressvalidation/v2'}
       SHIP_XMLNS = {'xmlns' => 'http://fedex.com/ws/ship/v10'}
 
+      # shipment response structs
+      ShipmentDetail = Struct.new(:us_domestic, :carrier_code, :service_type_description, 
+          :packaging_description, :operational_detail, :completed_package_details)
+      ShipmentOpDetail = Struct.new(:ursa_prefix_code, :ursa_suffix_code, :origin_location_id, :origin_location_number,
+        :origin_service_area, :destination_location_id, :destination_location_number, :destination_service_area,
+        :destination_location_province_code, :delivery_date, :commit_date, :inelagable_moneyback_guarantee, 
+        :astra_planned_service_level, :astra_desciption, :postal_code, :province_code, :country, :airport_id, :service_code)
+      PackageDetails = Struct.new(:sequence_number, :tracking_id_type, :form_id, :tracking_number, 
+        :group_number, :operational_detail, :label, :signature_option)
+      PackageOpDetail = Struct.new(:astra_handling_text, :operational_instructions, :barcodes)
+      OperationalInstruction = Struct.new(:number, :content)
+      Barcodes = Struct.new(:binary, :string)
+      Barcode = Struct.new(:type, :value)
+      Label = Struct.new(:type, :shipping_document_disposition, :resolution, :copies_to_print, :parts)
+      LabelPart = Struct.new(:sequence_number, :image_base64)
+
       def self.service_name_for_code(service_code)
         ServiceTypes[service_code] || "FedEx #{service_code.titleize.sub(/Fedex /, '')}"
       end
@@ -196,10 +212,7 @@ module ActiveMerchant
         options = @options.update(options)
         shipping_request = build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
         recipient_contact, recipient_address, payor_country_code, package_line_items, options)
-        p shipping_request
-        r = commit(save_request(shipping_request), (options[:test] || false))
-        p r
-        response = r.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(shipping_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_shipping_response(response, options)
       end
 
@@ -741,8 +754,73 @@ module ActiveMerchant
         {:dispatch_confirmation_number => dispatch_number, :location => location}
       end
 
+
+#      ShipmentDetail = Struct.new(:us_domestic, :carrier_code, :service_type_description, 
+#          :packaging_description, :operational_detail, :completed_package_details)
+#      ShipmentOpDetail = Struct.new(:ursa_prefix_code, :ursa_suffix_code, :origin_location_id, :origin_location_number,
+#        :origin_service_area, :destination_location_id, :destination_location_number, :destination_service_area,
+#        :destination_location_province_code, :delivery_date, :commit_date, :inelagable_moneyback_guarantee, 
+#        :astra_planned_service_level, :astra_desciption, :postal_code, :province_code, :country, :airport_id, :service_code)
+#      PackageDetails = Struct.new(:sequence_number, :tracking_id_type, :form_id, :tracking_number, 
+#        :group_number, :operational_detail, :label, :signature_option)
+#      PackageOpDetail = Struct.new(:astra_handling_text, :operational_instructions, :barcodes)
+#      OperationalInstruction = Struct.new(:number, :content)
+#      Barcodes = Struct.new(:binary, :string)
+#      Barcode = Struct.new(:type, :value)
+#      Label = Struct.new(:type, :shipping_document_disposition, :resolution, :copies_to_print, :parts)
+#      LabelPart = Struct.new(:sequence_number, :image_base64)
+
+
       def parse_shipping_response(response, options)
-        p response
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['ProcessShipmentReply']
+        success = response_success?(xml)
+        message = response_message(xml)
+        s_detail = root_node.elements['CompletedShipmentDetail']
+        o_detail = s_detail.elements['OperationalDetail']
+        # TODO: everythin before op detail
+        op_details = ShipmentOpDetail.new(*['UrsaPrefixCode','UrsaSuffixCode', 'OriginLocationId','OriginLocationNumber', 'OriginServiceArea',
+          'DestinationLocationId', 'DestinationLocationNumber', 
+          'DestinationServiceArea', 'DestinationLocationStateOrProvinceCode'].map {|p| o_detail.get_text(p).to_s},
+          *['DeliveryDate', 'CommitDate'].map {|d| Time.parse(o_detail.get_text(d).to_s)},
+          s_detail.get_text('IneligibleForMoneyBackGuarantee').to_s == 'true',
+          ['AstraPlannedServiceLevel', 'AstraDescription', 'PostalCode', 'StateOrProvinceCode', 
+            'CountryCode', 'AirportId', 'ServiceCode'].map {|p| o_detail.get_text(p).to_s}
+        )
+        dn = s_detail.elements['CompletedPackageDetails']
+        tids = dn.elements['TrackingIds']
+        op_detail = dn.elements['OperationalDetail']
+        bb = op_detail.elements['Barcodes'].elements['BinaryBarcodes']
+        bs = op_detail.elements['Barcodes'].elements['StringBarcodes']
+        p_op_detail = PackageOpDetail.new(op_detail.get_text('AstraHandlingText'), 
+          op_detail.elements.each('OperationalInstructions') { |oi_node|
+            OperationalInstruction.new(oi_node.get_text('Number'), oi_node.get_text('Content'))
+          },
+          Barcodes.new(Barcode.new(bb.get_text('Type'), bb.get_text('Value')), Barcode.new(Barcode.new(bs.get_text('Type'), bs.get_text('Value'))))
+        )
+
+        l_node = dn.elements['Label']
+        parts = l_node.elements.inject('Parts', []) do |acc, part_node|
+          acc << LabelPart.new(part_node.get_text('DocumentPartSequenceNumber').to_s.to_i, part_node.get_text('Image').to_s)
+        end
+        lbl = Label.new(
+          l_node.get_text('Type').to_s, l_node.get_text('ShippingDocumentDisposition').to_s, 
+          l_node.get_text('Resolution').to_s, l_node.get_text('CopiesToPrint').to_s.to_i,
+          parts
+        )
+
+        p_details = PackageDetails.new(dn.get_text('SequenceNumber').to_s.to_i, tids.get_text('TrackingIdType').to_s.to_i,
+          tids.get_text('FormId').to_s, tids.get_text('TrackingNumber').to_s, dn.get_text('GroupNumber').to_s.to_i, p_op_detail, lbl, dn.elements['SignatureOption'].to_s)
+
+        ShippingResponse.new(success, message, Hash.from_xml(response),
+          :carrier => @@name,
+          :xml => response,
+          :request => last_request,
+          :shipment_details => ShipmentDetail.new(s_detail.get_text('UsDomestic').to_s == 'true', 
+            s_detail.get_text('CarrierCode').to_s, s_detail.get_text('ServiceTypeDescription').to_s, 
+            s_detail.get_text('PackagingDescription').to_s,
+            op_details, p_details)
+        )
       end
 
       def response_status_node(document)

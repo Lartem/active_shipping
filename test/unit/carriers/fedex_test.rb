@@ -243,4 +243,15 @@ class FedExTest < Test::Unit::TestCase
         @locations[:beverly_hills], Time.new(2012, 8, 8, 10), Time.new(1970, 1, 1, 16), 
         1, @packages.values_at(:american_wii)[0], ActiveMerchant::Shipping::FedEx::CarrierCodes["fedex_express"], :test => true)
   end
+
+  def test_shipping
+    expected_request = xml_fixture('fedex/shipping_request')
+    mock_response = xml_fixture('fedex/shipping_response')
+    
+    @carrier.expects(:commit).returns(mock_response).with {|request, test_mode| Hash.from_xml(request) == Hash.from_xml(expected_request) && test_mode}.returns(mock_response)
+    shipping_response = @carrier.request_shipping(Time.new(2012, 8, 16, 17), 'REQUEST_COURIER', 'FEDEX_2_DAY', 'FEDEX_ENVELOPE', 
+        {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, @locations[:beverly_hills], 
+        {:person_name=>'Shiro Nakamuro', :company_name=>'Drop inc', :phone_number=>'1513851300'}, @locations[:new_york], 'US', 
+        [{:weight_units=>'LB', :weight_value=>'0.5', :item_description=>'Letter', :customer_reference_value=>'SM-US-000000102'}], :test=>true)
+  end
 end

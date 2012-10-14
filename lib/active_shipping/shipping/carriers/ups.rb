@@ -14,7 +14,10 @@ module ActiveMerchant
       
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
-        :track => 'ups.app/xml/Track'
+        :track => 'ups.app/xml/Track',
+        :courier_dispatch => 'webservices/Pickup', # webservices
+        :shipping => 'ups.app/xml/Ship',
+        :address_validation => 'ups.app/xml/AV'
       }
       
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -121,8 +124,106 @@ module ActiveMerchant
         parse_tracking_response(response, options)
       end
       
-      protected
+      def validate_addresses(addresses, options={})
+        #TODO
+      end
+
+      def check_pickup_availability()
+        #TODO
+      end
       
+      def courier_dispatch(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={})
+        options = @options.update(options)
+        access_request = build_ws_access_request
+        courier_dispatch_request = build_courier_dispatch_request(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
+        puts
+        p courier_dispatch_request
+        response = commit(:courier_dispatch, save_request(courier_dispatch_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        puts 'response!'
+        p response
+        puts
+        parse_courier_dispatch_response(response, options)
+      end
+
+      def request_shipping()
+        #TODO
+      end
+
+      protected
+
+      def build_courier_dispatch_request( pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
+        xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
+          'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:common' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:wsf' => 'http://www.ups.com/schema/wsf') do |env_node|
+          env_node << XmlNode.new('envr:Header') do |h_node|
+            h_node << build_ws_access_request
+          end
+          env_node << XmlNode.new('envr:Body') do |body_node| 
+            body_node << build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
+          end
+        end
+        xml_request.to_s
+      end
+      
+      def build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
+        xml_request = XmlNode.new('PickupCreationRequest', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |root_node|
+          root_node << XmlNode.new('common:Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0')
+
+          root_node << XmlNode.new('RatePickupIndicator', 'N')
+
+          root_node << XmlNode.new('Shipper', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |shipper_node|
+            shipper_node << XmlNode.new('Account') do |account_node|
+              build_nodes_from_hash(account_node, {:account_number => @options[:account_number] , :account_country_code => @options[:account_country_code]}) 
+            end
+          end
+
+          root_node << XmlNode.new('PickupDateInfo', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |date_node|
+            date_node << XmlNode.new('CloseTime', close_time.strftime('%H%M'))
+            date_node << XmlNode.new('ReadyTime', ready_time.strftime('%H%M'))
+            date_node << XmlNode.new('PickupDate', pickup_date.strftime('%Y%m%d'))
+          end
+
+          root_node << XmlNode.new('PickupAddress', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |address_node|
+            address_node << XmlNode.new('CompanyName', pickup_location.company_name) if pickup_location.company_name != nil
+            address_node << XmlNode.new('ContactName', pickup_location.name) if pickup_location.name != nil
+            address_node << XmlNode.new('AddressLine', pickup_location.address1) # only one address line allowed
+            address_node << XmlNode.new('City', pickup_location.city)
+            address_node << XmlNode.new('StateProvince', pickup_location.province)
+            address_node << XmlNode.new('PostalCode', pickup_location.postal_code)
+            address_node << XmlNode.new('CountryCode', pickup_location.country_code(:alpha2))
+            address_node << XmlNode.new('ResidentialIndicator', residential || 'Y')
+            address_node << XmlNode.new('Phone') do |phone_node|
+              phone_node << XmlNode.new('Number', pickup_location.phone)
+            end
+          end
+          root_node << XmlNode.new('AlternateAddressIndicator', 'Y')
+
+          root_node << XmlNode.new('PickupPiece', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |piece_node|
+            piece_node << XmlNode.new('ServiceCode', service_code)
+            piece_node << XmlNode.new('Quantity', quantity)
+            piece_node << XmlNode.new('DestinationCountryCode', dest_country_code)
+            piece_node << XmlNode.new('ContainerCode', container_code)
+          end
+
+          root_node << XmlNode.new('TotalWeight', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |weight_node|
+            weight_node << XmlNode.new('Weight', total_weight)
+            weight_node << XmlNode.new('UnitOfMeasurement', weight_units)
+          end
+
+          root_node << XmlNode.new('OverweightIndicator', 'N', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1')
+          root_node << XmlNode.new('PaymentMethod', '01', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1')
+        end
+        xml_request
+      end
+
+      def build_nodes_from_hash(main_node, hash) 
+        hash.keys.each do |k|
+          node_name = k.to_s.split('_').map { |w| w.capitalize }.join
+          main_node << XmlNode.new(node_name, hash[k])
+        end
+      end
+
       def upsified_location(location)
         if location.country_code == 'US' && US_TERRITORIES_TREATED_AS_COUNTRIES.include?(location.state)
           atts = {:country => location.state}
@@ -144,6 +245,18 @@ module ActiveMerchant
         xml_request.to_s
       end
       
+      def build_ws_access_request
+        xml_request = XmlNode.new('upss:UPSSecurity') do |s_node|
+          s_node << XmlNode.new('upss:UsernameToken') do |ut_node|
+            ut_node << XmlNode.new('upss:Username', @options[:login])
+            ut_node << XmlNode.new('upss:Password', @options[:password])
+          end
+          s_node << XmlNode.new('upss:ServiceAccessToken') do |sat_node|
+            sat_node << XmlNode.new('upss:AccessLicenseNumber', @options[:key])
+          end
+        end
+      end
+
       def build_rate_request(origin, destination, packages, options={})
         packages = Array(packages)
         xml_request = XmlNode.new('RatingServiceSelectionRequest') do |root_node|
@@ -429,9 +542,9 @@ module ActiveMerchant
       end
       
       def commit(action, request, test = false)
+        puts "#{test ? TEST_URL : LIVE_URL}/#{RESOURCES[action]}"
         ssl_post("#{test ? TEST_URL : LIVE_URL}/#{RESOURCES[action]}", request)
       end
-      
       
       def service_name_for(origin, code)
         origin = origin.country_code(:alpha2)

@@ -177,4 +177,19 @@ class UPSTest < Test::Unit::TestCase
     assert_not_equal prices_of.call(:fake_home_as_residential), prices_of.call(:fake_home_as_commercial)
     assert_not_equal prices_of.call(:fake_google_as_commercial), prices_of.call(:fake_google_as_residential)
   end
+
+  def test_courier_dispatch
+    assert_nothing_raised do
+      begin
+      @carrier.courier_dispatch(
+        Location.from(@locations[:beverly_hills].to_hash, :company => 'Smailex', :name=>'Smailex'), 
+        Time.new(2012, 9, 20, 18), Time.new(2012, 9, 20, 10), Date.new(2012, 8, 30), 
+        '012', 1, 'US', '01', 2, 'LBS')
+    rescue Exception=>e
+      puts
+      puts e
+      puts e.backtrace
+    end
+    end
+  end
 end

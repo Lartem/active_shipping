@@ -216,7 +216,30 @@ module ActiveMerchant
         parse_shipping_response(response, options)
       end
 
+      def cancel_pickup dispatch_confirmation_number, scheduled_date, location, courier_remarks, options={}
+        options = @options.update(options)
+        cancel_request = build_cancel_pickup_request(dispatch_confirmation_number, scheduled_date, location, courier_remarks, options)
+        #p cancel_request
+        response = commit(save_request(cancel_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_cancel_pickup_response(response, options)
+      end
+
       protected
+
+      def build_cancel_pickup_request dispatch_confirmation_number, scheduled_date, location, courier_remarks, options
+        xml_request = XmlNode.new('CancelPickupRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
+          root_node << build_request_header
+          root_node << build_version_node('disp', 3, 0, 1, PICKUP_XMLNS)
+          root_node << XmlNode.new('DispatchConfirmationNumber', dispatch_confirmation_number)
+          root_node << XmlNode.new('ScheduledDate', scheduled_date)
+          root_node << build_location_node_full(location, 'Location')
+          root_node << XmlNode.new('CourierRemarks', courier_remarks)
+        end
+        xml_request.to_s
+      end
 
       def build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
         recipient_contact, recipient_address, payor_country_code, package_line_items, options={})
@@ -749,9 +772,14 @@ module ActiveMerchant
         root_node = xml.elements['CourierDispatchReply']
         success = response_success?(xml)
         message = response_message(xml)
-        dispatch_number = root_node.get_text('DispatchConfirmationNumber').to_s
-        location = root_node.get_text('Location').to_s
-        {:dispatch_confirmation_number => dispatch_number, :location => location}
+        if success
+          dispatch_number = root_node.get_text('DispatchConfirmationNumber').to_s
+          location = root_node.get_text('Location').to_s
+          params = {:dispatch_confirmation_number => dispatch_number, :location => location}
+        else
+          params = {:code => response_status_node(xml).get_text('Code')}
+        end
+        Response.new(success, message, params)
       end
 
 
@@ -821,6 +849,13 @@ module ActiveMerchant
             s_detail.get_text('PackagingDescription').to_s,
             op_details, p_details)
         )
+      end
+      
+      def parse_cancel_pickup_response(response, options)
+        xml = REXML::Document.new(response)
+        success = response_success?(xml)
+        message = response_message(xml)
+        Response.new(success, message)
       end
 
       def response_status_node(document)

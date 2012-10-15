@@ -202,9 +202,7 @@ module ActiveMerchant
       def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
         courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
-        p courier_dispatch_request
         response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        p response
         parse_courier_dispatch_response(response, options)
       end
 
@@ -221,9 +219,7 @@ module ActiveMerchant
       def cancel_pickup pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options={}
         options = @options.update(options)
         cancel_request = build_cancel_pickup_request(pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options)
-        p cancel_request
         response = commit(save_request(cancel_request), (options[:test] || false))
-        p response 
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)
       end
@@ -237,9 +233,6 @@ module ActiveMerchant
           'xmlns' => 'http://fedex.com/ws/pickup/v3') do |root_node|
           root_node << build_request_header
           root_node << build_version_node('disp', 3, 0, 0, 'xmlns' => 'http://fedex.com/ws/pickup/v3')
-          # root_node << XmlNode.new('TransactionDetail') do |transaction_detail_node|
-          #   transaction_detail_node << XmlNode.new('CustomerTransactionId', transaction_id)
-          # end
           root_node << XmlNode.new('CarrierCode', carrier_code)
           root_node << XmlNode.new('PickupConfirmationNumber', pickup_confirmation_number)
           root_node << XmlNode.new('ScheduledDate', scheduled_date.strftime('%Y-%m-%d'))

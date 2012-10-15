@@ -192,16 +192,12 @@ class FedExTest < Test::Unit::TestCase
 
   def test_courier_dispatch_and_cancel_pickup
     response = nil
-    puts '==========='
-    5.times {puts}
     assert_nothing_raised do
       time = Time.parse("14:00", (Time.now + 10*60*60))
       dispatch_response = @carrier_prod.courier_dispatch(
         {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, 
         @locations[:beverly_hills], time, Time.new(1970, 1, 1, 16), 
         1, @packages.values_at(:american_wii)[0], ActiveMerchant::Shipping::FedEx::CarrierCodes["fedex_express"], :test => false)
-      puts '===================>>>>>'
-      p dispatch_response
       response = @carrier_prod.cancel_pickup(dispatch_response.params["dispatch_confirmation_number"], "FDXE", time, dispatch_response.params["location"], 'ActiveShipping', 'USD', 150.0, :test => false)
     end
   end

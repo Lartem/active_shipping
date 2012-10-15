@@ -202,7 +202,9 @@ module ActiveMerchant
       def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
         courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
+        p courier_dispatch_request
         response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        p response
         parse_courier_dispatch_response(response, options)
       end
 
@@ -216,27 +218,46 @@ module ActiveMerchant
         parse_shipping_response(response, options)
       end
 
-      def cancel_pickup dispatch_confirmation_number, scheduled_date, location, courier_remarks, options={}
+      def cancel_pickup pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options={}
         options = @options.update(options)
-        cancel_request = build_cancel_pickup_request(dispatch_confirmation_number, scheduled_date, location, courier_remarks, options)
-        #p cancel_request
-        response = commit(save_request(cancel_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        cancel_request = build_cancel_pickup_request(pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options)
+        p cancel_request
+        response = commit(save_request(cancel_request), (options[:test] || false))
+        p response 
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)
       end
 
       protected
 
-      def build_cancel_pickup_request dispatch_confirmation_number, scheduled_date, location, courier_remarks, options
+      def build_cancel_pickup_request pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options
         xml_request = XmlNode.new('CancelPickupRequest', 
           'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
           'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-          'xmlns' => 'http://fedex.com/ws/courierdispatch/v3') do |root_node|
+          'xmlns' => 'http://fedex.com/ws/pickup/v3') do |root_node|
           root_node << build_request_header
-          root_node << build_version_node('disp', 3, 0, 1, PICKUP_XMLNS)
-          root_node << XmlNode.new('DispatchConfirmationNumber', dispatch_confirmation_number)
-          root_node << XmlNode.new('ScheduledDate', scheduled_date)
-          root_node << build_location_node_full(location, 'Location')
-          root_node << XmlNode.new('CourierRemarks', courier_remarks)
+          root_node << build_version_node('disp', 3, 0, 0, 'xmlns' => 'http://fedex.com/ws/pickup/v3')
+          # root_node << XmlNode.new('TransactionDetail') do |transaction_detail_node|
+          #   transaction_detail_node << XmlNode.new('CustomerTransactionId', transaction_id)
+          # end
+          root_node << XmlNode.new('CarrierCode', carrier_code)
+          root_node << XmlNode.new('PickupConfirmationNumber', pickup_confirmation_number)
+          root_node << XmlNode.new('ScheduledDate', scheduled_date.strftime('%Y-%m-%d'))
+          root_node << XmlNode.new('Location', location)
+          root_node << XmlNode.new('Remarks', 'NO LONGER NEEDED')
+          root_node << XmlNode.new('ShippingChargesPayment') do |charges_node|
+            charges_node << XmlNode.new('PaymentType', 'THIRD_PARTY')
+            charges_node << XmlNode.new('Payor') do |payor|
+              payor << XmlNode.new('AccountNumber', options[:account])
+              payor << XmlNode.new('CountryCode', 'US')
+            end
+            charges_node << XmlNode.new('Amount') do |amount_node|
+              amount_node << XmlNode.new('Currency', currency)
+              amount_node << XmlNode.new('Amount', amount)
+            end
+          end
+          root_node << XmlNode.new('Reason', 'NO LONGER NEEDED')
+          root_node << XmlNode.new('ContactName', 'Ivan')
         end
         xml_request.to_s
       end

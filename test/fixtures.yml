@@ -4,6 +4,12 @@ ups:
   key: XmlAccessKey
   login: UPSDotComLogin
   password: UPSDotComPassword
+  test: true
+ups_production:
+  key: XmlAccessKey
+  login: UPSDotComLogin
+  password: UPSDotComPassword
+  test: false
 fedex:
   key: FedExKey
   password: FedExPassword

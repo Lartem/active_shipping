@@ -196,7 +196,21 @@ module ActiveMerchant
                                       :country => 'NZ',
                                       :city => 'Auckland',
                                       :address1 => '192 Victoria St West',
-                                      :postal_code => '1010')
+                                      :postal_code => '1010'),
+        :joel_gibson => Location.new(
+                                      :country => 'US',
+                                      :city => 'Brooklyn',
+                                      :postal_code => '11225',
+                                      :address1 => '7, Balfour Pl',
+                                      :address2 => 'Apt E3',
+                                      :state => 'NY'),
+        :anton_kartashov => Location.new(
+                                      :country => 'US',
+                                      :city => 'Manhattan',
+                                      :postal_code => '10020',
+                                      :address1 => '135, W 50th St',
+                                      :address2 => 'Fl 13th',
+                                      :state => 'NY')
       }
       
     end

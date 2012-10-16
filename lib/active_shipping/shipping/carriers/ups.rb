@@ -97,10 +97,26 @@ module ActiveMerchant
         'M' => :manifest_pickup
       })
 
+      PACKAGING_TYPES = {
+        '01' => 'UPS Letter', 
+        '02' => 'Customer Supplied Package',
+        '03' => 'Tube', 
+        '04' => 'PAK',
+        '21' => 'UPS Express Box',
+        '24' => 'UPS 25KG Box',
+        '25' => 'UPS 10KG Box', 
+        '30' => 'Pallet',
+        '2a' => 'Small Express Box', 
+        '2b' => 'Medium Express Box',
+        '2c' => 'Large Express Box'
+      }
+
       # From http://en.wikipedia.org/w/index.php?title=European_Union&oldid=174718707 (Current as of November 30, 2007)
       EU_COUNTRY_CODES = ["GB", "AT", "BE", "BG", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"]
       
       US_TERRITORIES_TREATED_AS_COUNTRIES = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
+
+
       
       def requirements
         [:key, :login, :password]
@@ -122,6 +138,14 @@ module ActiveMerchant
         tracking_request = build_tracking_request(tracking_number, options)
         response = commit(:track, save_request(access_request + tracking_request), (options[:test] || false))
         parse_tracking_response(response, options)
+      end
+
+      def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
+        options = @options.update(options)
+        access_request = build_access_request
+        shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
+        p shipping_request
+        #response = commit(save_request(shipping_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
       end
       
       def validate_addresses(addresses, options={})
@@ -151,6 +175,7 @@ module ActiveMerchant
 
       protected
 
+
       def build_courier_dispatch_request( pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
         xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
           'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
@@ -164,6 +189,84 @@ module ActiveMerchant
           end
         end
         xml_request.to_s
+      end
+
+      def build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
+        xml_request = XmlNode.new('ShipmentRequest',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance') do |root_node|
+          #Request node
+          root_node << XmlNode.new('Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0') do |request_node|
+            request_node << XmlNode.new('RequestOption', 'nonvalidate')
+            if options[:transaction_reference_id]
+              request_node << XmlNode.new('TransactionReference') do |tr_ref_node|
+                tr_ref_node << XmlNode.new('TransactionIdentifier', options[:transaction_reference_id])
+              end
+            end
+          end #End Request node
+
+          #Shipment node
+          root_node << XmlNode.new('Shipment', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0') do |shipment_node|
+            #Description node required if all of the listed conditions below are true:
+            #1. ShipFrom and ShipTo countries are not the same;
+            #2. The packaging type is not UPS Letter;
+            #3. The ShipFrom and or ShipTo countries are not in the European Union or 
+            # the ShipFrom and ShipTo countries are both in the European Union and the shipments service type 
+            # is not UPS Standard.
+            # WARNING! Not implemented yet
+            shipment_node << XmlNode.new('Description', package_item[:item_description]) if package_item[:item_description]
+            shipment_node << build_ship_param_node('Shipper', shipper, shipper_location) 
+            shipment_node << build_ship_param_node('ShipTo', ship_to_person, ship_to_location)
+            shipment_node << build_ship_param_node('ShipFrom', ship_from_person, ship_from_location)
+
+            #PaymentInformation node
+            shipment_node << XmlNode.new('PaymentInformation') do |payment_node|
+              payment_node << XmlNode.new('ShipmentCharge') do |shipment_charge_node|
+                type = PICKUP_CODES[options[:pickup_type]] || PICKUP_CODES[:daily_pickup]
+                shipment_charge_node << XmlNode.new('Type', type)
+                shipment_charge_node << XmlNode.new('BillShipper') do |bill_shipper_node|
+                  bill_shipper_node << XmlNode.new('AccountNumber', options[:bill_shipper_account_number])
+                end
+
+              end
+            end #End PaymentInformation node
+            
+            #Service node
+            shipment_node << XmlNode.new('Service') do |service_node|
+              service_node << XmlNode.new('Code', options[:service_code] || '01')
+              service_node << XmlNode.new('Description', DEFAULT_SERVICES[options[:service_code]] || DEFAULT_SERVICES['01'])
+            end #End Service node
+
+            #Package node
+            shipment_node << XmlNode.new('Package') do |package_node|
+              #Required for shipment with return service
+              package_node << XmlNode.new('Description', package_item[:item_description]) if package_item[:item_description]              
+              package_node << XmlNode.new('Packaging') do |packaging_node|
+                packaging_node << XmlNode.new('Code', options[:packaging_type] || '02')
+              end
+              package_node << XmlNode.new('PackageWeight') do |package_weight_node|
+                package_weight_node << XmlNode.new('UnitOfMeasurement') do |unit_of_measurement_node|
+                  unit_of_measurement_node << XmlNode.new('Code', package_item[:weight_units] || 'LBS')
+                end
+                package_weight_node << XmlNode.new('Weight', package_item[:weight_value])
+              end
+            end #End Package node
+
+            shipment_node << XmlNode.new('PackageServiceOptions') do |package_service_options_node|
+              package_service_options_node << XmlNode.new('DeclaredValue') do |declared_value_node|
+                declared_value_node << XmlNode.new('CurrencyCode', package_item[:currency_code] || 'USD')
+                declared_value_node << XmlNode.new('MonetaryValue', package_item[:monetary_value] || '100')
+              end
+            end
+          end #End Shipment node
+
+          #LabelSpecification node
+          root_node << XmlNode.new('LabelSpecification', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0') do |label_specification_node|
+            label_specification_node << XmlNode.new('LabelImageFormat') do | label_image_format_node |
+              label_image_format_node << XmlNode.new('Code', 'GIF')
+            end
+          end
+        end
       end
       
       def build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
@@ -352,6 +455,35 @@ module ActiveMerchant
           root_node << XmlNode.new('TrackingNumber', tracking_number.to_s)
         end
         xml_request.to_s
+      end
+
+      # [Shipper, ShipTo, ShipFrom] nodes
+      def build_ship_param_node(node_name, person, location, options={})
+        node = XmlNode.new(node_name) do |node|
+          node << XmlNode.new('Name', person[:person_name])
+          if person[:phone_number]
+            node << XmlNode.new('Phone') do |phone|
+              phone << XmlNode.new('Number', person[:phone_number].gsub(/[^\d]/, ''))
+              phone << XmlNode.new('Extension', person[:phone_number_ext].gsub(/[^\d]/, '')) if person[:phone_number_ext]
+            end
+          end
+          node << XmlNode.new('ShipperNumber', person[:shipper_number]) if node_name == 'Shipper' and person[:shipper_number]
+          node << XmlNode.new('FaxNumber', person[:shipper_fax_number]) if node_name == 'Shipper' and person[:shipper_fax_number]
+          node << XmlNode.new('EMailAddress', person[:email]) if person[:email]
+          node << XmlNode.new('Address') do |address_node|
+            address_node << XmlNode.new('AddressLine', location.address1) unless location.address1.blank?
+            address_node << XmlNode.new('AddressLine', location.address2) unless location.address2.blank?
+            address_node << XmlNode.new('AddressLine', location.address3) unless location.address3.blank?
+            address_node << XmlNode.new('City', location.city) unless location.city.blank?
+            #Required if shipper is in the US or CA. If Shipper country is US or CA, then the value must be a valid
+            #US State/ Canadian Province code. If the country is Ireland, the StateProvinceCode will contain the county.
+            address_node << XmlNode.new('StateProvinceCode', location.province) unless location.province.blank?
+            address_node << XmlNode.new('PostalCode', location.postal_code) unless location.postal_code.blank?
+            address_node << XmlNode.new('CountryCode', location.country_code(:alpha2)) unless location.country_code(:alpha2).blank?
+            address_node << XmlNode.new("ResidentialAddressIndicator", true) unless location.commercial?
+          end
+
+        end  
       end
       
       def build_location_node(name,location,options={})
@@ -557,8 +689,7 @@ module ActiveMerchant
         
         name ||= OTHER_NON_US_ORIGIN_SERVICES[code] unless name == 'US'
         name ||= DEFAULT_SERVICES[code]
-      end
-      
+      end      
     end
   end
 end

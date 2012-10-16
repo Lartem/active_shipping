@@ -62,4 +62,11 @@ class PackageTest < Test::Unit::TestCase
     assert_equal 'GBP', wii.currency
     assert_equal 26999, wii.value
   end
+
+  def test_pounds_and_inches
+    d = [10,20,30].map{|v| Quantified::Length.new(v, :inches)}
+    m = Quantified::Mass.new(1,:pounds)
+    pack = Package.new(m, d, :units => :imperial)
+    assert_nothing_raised { pack.inches }
+  end
 end

@@ -219,12 +219,39 @@ module ActiveMerchant
       def cancel_pickup pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options={}
         options = @options.update(options)
         cancel_request = build_cancel_pickup_request(pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options)
-        response = commit(save_request(cancel_request), (options[:test] || false))
-        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(cancel_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)
       end
 
+      def cancel_shipment tracking_number, ship_timestamp, form_id, tracking_id_type, options={}
+        options = @options
+        delete_request = build_cancel_shipment_request(tracking_number, ship_timestamp, form_id, tracking_id_type, options)
+        p delete_request
+        response = commit(save_request(delete_request), (options[:test] || false))
+        p response
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_cancel_pickup_response(response, options)        
+      end
+
       protected
+
+      def build_cancel_shipment_request tracking_number, ship_timestamp, form_id, tracking_id_type, options
+        xml_request = XmlNode.new('DeleteShipmentRequest', 
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/ship/v12') do |root_node|
+          root_node << build_request_header
+          root_node << build_version_node('ship', 12, 1, 0, 'xmlns' => 'http://fedex.com/ws/ship/v12')
+          root_node << XmlNode.new('ShipTimestamp', ship_timestamp)
+          root_node << XmlNode.new('TrackingId') do |tracking_id_node|
+            tracking_id_node << XmlNode.new('TrackingIdType', tracking_id_type)
+            tracking_id_node << XmlNode.new('FormId', form_id)
+            tracking_id_node << XmlNode.new('TrackingNumber', tracking_number)
+          end
+          root_node << XmlNode.new('DeletionControl', 'DELETE_ALL_PACKAGES')
+        end
+        xml_request.to_s
+      end
 
       def build_cancel_pickup_request pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options
         xml_request = XmlNode.new('CancelPickupRequest', 
@@ -707,34 +734,36 @@ module ActiveMerchant
         message = response_message(xml)
         addresses = {}
         parsed_results = []
-        root_node.elements.each('AddressResults') do |address_result_node|
-          address_id, score, changes, delivery_point_validation, parsed_address, address_details = nil
-          address_id = address_result_node.get_text('AddressId').to_s
-          address_result_node.elements.each('ProposedAddressDetails') do |address_details_node|
-            score = address_details_node.get_text('Score')
-            changes = address_details_node.elements.inject('Changes', []) {|acc, change_node| acc.push(change_node.get_text.to_s)}
-            delivery_point_validation = address_details_node.get_text('DeliveryPointValidation')
-            address_details_node.elements.each('Address') do |address_node|
-              address1, address2, address3 = address_node.elements.inject('StreetLines', []) {|acc, street_line| acc.push(street_line.get_text.to_s)}
-              location = Location.new(
-                :address1 => address1,
-                :address2 => address2,
-                :address3 => address3,
-                :city => address_node.get_text('City').to_s,
-                :province => address_node.get_text('StateOrProvinceCode').to_s,
-                :postal_code => address_node.get_text('PostalCode').to_s,
-                :country => address_node.get_text('CountryCode').to_s
-              )
-              addresses.merge!({address_id => AddressValidationDetails.new(location, score, address_id, changes, delivery_point_validation)})
-            end
-            address_details_node.elements.each('ParsedAddress') do |p_address|
-              parsed_results << ParsedAddressValidationResults.new(
-                *['ParsedStreetLine', 
-                    'ParsedCity', 
-                    'ParsedStateOrProvinceCode', 
-                    'ParsedPostalCode', 
-                    'ParsedCountryCode'].map {|el| parse_parsed_elements(p_address,el)}
-              )
+        if success
+          root_node.elements.each('AddressResults') do |address_result_node|
+            address_id, score, changes, delivery_point_validation, parsed_address, address_details = nil
+            address_id = address_result_node.get_text('AddressId').to_s
+            address_result_node.elements.each('ProposedAddressDetails') do |address_details_node|
+              score = address_details_node.get_text('Score')
+              changes = address_details_node.elements.inject('Changes', []) {|acc, change_node| acc.push(change_node.get_text.to_s)}
+              delivery_point_validation = address_details_node.get_text('DeliveryPointValidation')
+              address_details_node.elements.each('Address') do |address_node|
+                address1, address2, address3 = address_node.elements.inject('StreetLines', []) {|acc, street_line| acc.push(street_line.get_text.to_s)}
+                location = Location.new(
+                  :address1 => address1,
+                  :address2 => address2,
+                  :address3 => address3,
+                  :city => address_node.get_text('City').to_s,
+                  :province => address_node.get_text('StateOrProvinceCode').to_s,
+                  :postal_code => address_node.get_text('PostalCode').to_s,
+                  :country => address_node.get_text('CountryCode').to_s
+                )
+                addresses.merge!({address_id => AddressValidationDetails.new(location, score, address_id, changes, delivery_point_validation)})
+              end
+              address_details_node.elements.each('ParsedAddress') do |p_address|
+                parsed_results << ParsedAddressValidationResults.new(
+                  *['ParsedStreetLine', 
+                      'ParsedCity', 
+                      'ParsedStateOrProvinceCode', 
+                      'ParsedPostalCode', 
+                      'ParsedCountryCode'].map {|el| parse_parsed_elements(p_address,el)}
+                )
+              end
             end
           end
         end
@@ -796,6 +825,12 @@ module ActiveMerchant
         Response.new(success, message, params)
       end
 
+      def parse_cancel_pickup_response(response, options)
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['CourierDispatchReply']
+        success = response_success?(xml)
+        message = response_message(xml)        
+      end
 
 #      ShipmentDetail = Struct.new(:us_domestic, :carrier_code, :service_type_description, 
 #          :packaging_description, :operational_detail, :completed_package_details)
@@ -815,53 +850,57 @@ module ActiveMerchant
 
       def parse_shipping_response(response, options)
         xml = REXML::Document.new(response)
+        pp xml
         root_node = xml.elements['ProcessShipmentReply']
         success = response_success?(xml)
         message = response_message(xml)
-        s_detail = root_node.elements['CompletedShipmentDetail']
-        o_detail = s_detail.elements['OperationalDetail']
-        # TODO: everythin before op detail
-        op_details = ShipmentOpDetail.new(*['UrsaPrefixCode','UrsaSuffixCode', 'OriginLocationId','OriginLocationNumber', 'OriginServiceArea',
-          'DestinationLocationId', 'DestinationLocationNumber', 
-          'DestinationServiceArea', 'DestinationLocationStateOrProvinceCode'].map {|p| o_detail.get_text(p).to_s},
-          *['DeliveryDate', 'CommitDate'].map {|d| Time.parse(o_detail.get_text(d).to_s)},
-          s_detail.get_text('IneligibleForMoneyBackGuarantee').to_s == 'true',
-          ['AstraPlannedServiceLevel', 'AstraDescription', 'PostalCode', 'StateOrProvinceCode', 
-            'CountryCode', 'AirportId', 'ServiceCode'].map {|p| o_detail.get_text(p).to_s}
-        )
-        dn = s_detail.elements['CompletedPackageDetails']
-        tids = dn.elements['TrackingIds']
-        op_detail = dn.elements['OperationalDetail']
-        bb = op_detail.elements['Barcodes'].elements['BinaryBarcodes']
-        bs = op_detail.elements['Barcodes'].elements['StringBarcodes']
-        p_op_detail = PackageOpDetail.new(op_detail.get_text('AstraHandlingText'), 
-          op_detail.elements.each('OperationalInstructions') { |oi_node|
-            OperationalInstruction.new(oi_node.get_text('Number'), oi_node.get_text('Content'))
-          },
-          Barcodes.new(Barcode.new(bb.get_text('Type'), bb.get_text('Value')), Barcode.new(Barcode.new(bs.get_text('Type'), bs.get_text('Value'))))
-        )
+        shipment_detail = nil
+        if success
+          s_detail = root_node.elements['CompletedShipmentDetail']
+          o_detail = s_detail.elements['OperationalDetail']
+          # TODO: everythin before op detail
+          op_details = ShipmentOpDetail.new(*['UrsaPrefixCode','UrsaSuffixCode', 'OriginLocationId','OriginLocationNumber', 'OriginServiceArea',
+            'DestinationLocationId', 'DestinationLocationNumber', 
+            'DestinationServiceArea', 'DestinationLocationStateOrProvinceCode'].map {|p| o_detail.get_text(p).to_s},
+            *['DeliveryDate', 'CommitDate'].map {|d| Time.parse(o_detail.get_text(d).to_s)},
+            s_detail.get_text('IneligibleForMoneyBackGuarantee').to_s == 'true',
+            ['AstraPlannedServiceLevel', 'AstraDescription', 'PostalCode', 'StateOrProvinceCode', 
+              'CountryCode', 'AirportId', 'ServiceCode'].map {|p| o_detail.get_text(p).to_s}
+          )
+          dn = s_detail.elements['CompletedPackageDetails']
+          tids = dn.elements['TrackingIds']
+          op_detail = dn.elements['OperationalDetail']
+          bb = op_detail.elements['Barcodes'].elements['BinaryBarcodes']
+          bs = op_detail.elements['Barcodes'].elements['StringBarcodes']
+          p_op_detail = PackageOpDetail.new(op_detail.get_text('AstraHandlingText'), 
+            op_detail.elements.each('OperationalInstructions') { |oi_node|
+              OperationalInstruction.new(oi_node.get_text('Number'), oi_node.get_text('Content'))
+            },
+            Barcodes.new(Barcode.new(bb.get_text('Type'), bb.get_text('Value')), Barcode.new(Barcode.new(bs.get_text('Type'), bs.get_text('Value'))))
+          )
 
-        l_node = dn.elements['Label']
-        parts = l_node.elements.inject('Parts', []) do |acc, part_node|
-          acc << LabelPart.new(part_node.get_text('DocumentPartSequenceNumber').to_s.to_i, part_node.get_text('Image').to_s)
+          l_node = dn.elements['Label']
+          parts = l_node.elements.inject('Parts', []) do |acc, part_node|
+            acc << LabelPart.new(part_node.get_text('DocumentPartSequenceNumber').to_s.to_i, part_node.get_text('Image').to_s)
+          end
+          lbl = Label.new(
+            l_node.get_text('Type').to_s, l_node.get_text('ShippingDocumentDisposition').to_s, 
+            l_node.get_text('Resolution').to_s, l_node.get_text('CopiesToPrint').to_s.to_i,
+            parts
+          )
+
+          p_details = PackageDetails.new(dn.get_text('SequenceNumber').to_s.to_i, tids.get_text('TrackingIdType').to_s.to_i,
+            tids.get_text('FormId').to_s, tids.get_text('TrackingNumber').to_s, dn.get_text('GroupNumber').to_s.to_i, p_op_detail, lbl, dn.elements['SignatureOption'].to_s)
+          shipment_detail = ShipmentDetail.new(s_detail.get_text('UsDomestic').to_s == 'true', 
+            s_detail.get_text('CarrierCode').to_s, s_detail.get_text('ServiceTypeDescription').to_s, 
+            s_detail.get_text('PackagingDescription').to_s,
+            op_details, p_details)
         end
-        lbl = Label.new(
-          l_node.get_text('Type').to_s, l_node.get_text('ShippingDocumentDisposition').to_s, 
-          l_node.get_text('Resolution').to_s, l_node.get_text('CopiesToPrint').to_s.to_i,
-          parts
-        )
-
-        p_details = PackageDetails.new(dn.get_text('SequenceNumber').to_s.to_i, tids.get_text('TrackingIdType').to_s.to_i,
-          tids.get_text('FormId').to_s, tids.get_text('TrackingNumber').to_s, dn.get_text('GroupNumber').to_s.to_i, p_op_detail, lbl, dn.elements['SignatureOption'].to_s)
-
         ShippingResponse.new(success, message, Hash.from_xml(response),
           :carrier => @@name,
           :xml => response,
           :request => last_request,
-          :shipment_details => ShipmentDetail.new(s_detail.get_text('UsDomestic').to_s == 'true', 
-            s_detail.get_text('CarrierCode').to_s, s_detail.get_text('ServiceTypeDescription').to_s, 
-            s_detail.get_text('PackagingDescription').to_s,
-            op_details, p_details)
+          :shipment_details => shipment_detail 
         )
       end
       

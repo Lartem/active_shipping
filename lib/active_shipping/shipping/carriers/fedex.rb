@@ -732,6 +732,7 @@ module ActiveMerchant
         root_node = xml.elements['AddressValidationReply']
         success = response_success?(xml)
         message = response_message(xml)
+        p xml
         addresses = {}
         parsed_results = []
         if success

@@ -9,6 +9,7 @@ module ActiveMerchant
     # :account is your FedEx account number
     # :login is your meter number
     class FedEx < Carrier
+      require 'lumberjack'
       self.retry_safe = true
       
       cattr_reader :name
@@ -156,6 +157,14 @@ module ActiveMerchant
       Label = Struct.new(:type, :shipping_document_disposition, :resolution, :copies_to_print, :parts)
       LabelPart = Struct.new(:sequence_number, :image_base64)
 
+      LOGGER_NAMES = [:address_validation, :rates, :tracking, :pickup_availability, :courier_dispatch, :request_shipping, :cancel_pickup, :cancel_shipping]
+
+      def initialize(options={})
+        @loggers = create_loggers(options[:log_dir]) if options[:log_dir] != nil
+        @loggers ||= {}
+        super(options)
+      end
+
       def self.service_name_for_code(service_code)
         ServiceTypes[service_code] || "FedEx #{service_code.titleize.sub(/Fedex /, '')}"
       end
@@ -169,24 +178,30 @@ module ActiveMerchant
         packages = Array(packages)
         
         rate_request = build_rate_request(origin, destination, packages, options)
-        
-        response = commit(save_request(rate_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
-        
+        log(:rates, rate_request)
+        response = commit(save_request(rate_request), (options[:test] || false))
+        log(:rates, response)
+        response = response.gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
         parse_rate_response(origin, destination, packages, response, options)
       end
       
       def find_tracking_info(tracking_number, options={})
-        options = @options.update(options)
-        
+        options = @options.update(options)        
         tracking_request = build_tracking_request(tracking_number, options)
-        response = commit(save_request(tracking_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
+        log(:tracking, tracking_request)
+        response = commit(save_request(tracking_request), (options[:test] || false))
+        log(:tracking, response)
+        response = response.gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
         parse_tracking_response(response, options)
       end
       
       def validate_addresses(addresses, options={})
         options = @options.update(options)
         validate_address_request = build_validate_address_request(addresses)
-        response = commit(save_request(validate_address_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:address_validation, validate_address_request)
+        response = commit(save_request(validate_address_request), (options[:test] || false))
+        log(:address_validation, response)
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_address_validation_response(response, options)
       end
 
@@ -195,14 +210,20 @@ module ActiveMerchant
         options = @options.update(options)
         check_pickup_request = build_pickup_request(pickup_address, request_types, dispatch_date, 
           package_ready_time, customer_close_time, carriers, shipment_attributes)
-        response = commit(save_request(check_pickup_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:pickup_availability, check_pickup_request)
+        response = commit(save_request(check_pickup_request), (options[:test] || false))
+        log(:pickup_availability, response)
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_pickup_response(response, options)        
       end
 
       def courier_dispatch(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type, options={})
         options = @options.update(options)
         courier_dispatch_request = build_courier_dispatch_request(contact, pickup_location, ready_timestamp, company_close_time, package_count, packages, carrier_type)
-        response = commit(save_request(courier_dispatch_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:courier_dispatch, courier_dispatch_request)
+        response = commit(save_request(courier_dispatch_request), (options[:test] || false))
+        log(:courier_dispatch, response)
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_courier_dispatch_response(response, options)
       end
 
@@ -212,23 +233,29 @@ module ActiveMerchant
         options = @options.update(options)
         shipping_request = build_shipping_request(ship_timestamp, dropoff_type, service_type, packaging_type, shipper_contact, shipper_address, 
         recipient_contact, recipient_address, payor_country_code, package_line_items, options)
-        response = commit(save_request(shipping_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:request_shipping, shipping_request)
+        response = commit(save_request(shipping_request), (options[:test] || false))
+        log(:request_shipping, response)
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_shipping_response(response, options)
       end
 
       def cancel_pickup pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options={}
         options = @options.update(options)
         cancel_request = build_cancel_pickup_request(pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options)
-        response = commit(save_request(cancel_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:cancel_pickup, cancel_request)
+        response = commit(save_request(cancel_request), (options[:test] || false))
+        log(:request_shipping, response)
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)
       end
 
       def cancel_shipment tracking_number, ship_timestamp, form_id, tracking_id_type, options={}
         options = @options
         delete_request = build_cancel_shipment_request(tracking_number, ship_timestamp, form_id, tracking_id_type, options)
-        p delete_request
+        log(:cancel_request, delete_request)
         response = commit(save_request(delete_request), (options[:test] || false))
-        p response
+        log(:cancel_request, response)
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)        
       end
@@ -732,7 +759,6 @@ module ActiveMerchant
         root_node = xml.elements['AddressValidationReply']
         success = response_success?(xml)
         message = response_message(xml)
-        p xml
         addresses = {}
         parsed_results = []
         if success
@@ -833,25 +859,8 @@ module ActiveMerchant
         message = response_message(xml)        
       end
 
-#      ShipmentDetail = Struct.new(:us_domestic, :carrier_code, :service_type_description, 
-#          :packaging_description, :operational_detail, :completed_package_details)
-#      ShipmentOpDetail = Struct.new(:ursa_prefix_code, :ursa_suffix_code, :origin_location_id, :origin_location_number,
-#        :origin_service_area, :destination_location_id, :destination_location_number, :destination_service_area,
-#        :destination_location_province_code, :delivery_date, :commit_date, :inelagable_moneyback_guarantee, 
-#        :astra_planned_service_level, :astra_desciption, :postal_code, :province_code, :country, :airport_id, :service_code)
-#      PackageDetails = Struct.new(:sequence_number, :tracking_id_type, :form_id, :tracking_number, 
-#        :group_number, :operational_detail, :label, :signature_option)
-#      PackageOpDetail = Struct.new(:astra_handling_text, :operational_instructions, :barcodes)
-#      OperationalInstruction = Struct.new(:number, :content)
-#      Barcodes = Struct.new(:binary, :string)
-#      Barcode = Struct.new(:type, :value)
-#      Label = Struct.new(:type, :shipping_document_disposition, :resolution, :copies_to_print, :parts)
-#      LabelPart = Struct.new(:sequence_number, :image_base64)
-
-
       def parse_shipping_response(response, options)
         xml = REXML::Document.new(response)
-        pp xml
         root_node = xml.elements['ProcessShipmentReply']
         success = response_success?(xml)
         message = response_message(xml)
@@ -936,6 +945,17 @@ module ActiveMerchant
         else currency
         end
       end
+
+      def create_loggers log_dir
+        Dir.mkdir log_dir rescue nil
+        LOGGER_NAMES.inject({}) { |acc, l_sym| 
+          acc.merge!({l_sym => Lumberjack::Logger.new(log_dir + '/' + l_sym.to_s)})
+        } 
+      end
+
+      def log request_type, message
+        @loggers[request_type].info(message) if @loggers[request_type] != nil
+      end      
     end
   end
 end

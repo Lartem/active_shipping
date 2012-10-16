@@ -4,7 +4,7 @@ class FedExTest < Test::Unit::TestCase
   def setup
     @packages                     = TestFixtures.packages
     @locations                    = TestFixtures.locations
-    @carrier                      = FedEx.new(:key => '1111', :password => '2222', :account => '3333', :login => '4444')
+    @carrier                      = FedEx.new(:key => '1111', :password => '2222', :account => '3333', :login => '4444', :log_dir =>'./logs/')
     @tracking_response            = xml_fixture('fedex/tracking_response')
     @in_transit_tracking_response = xml_fixture('fedex/in_transit_tracking_response')
     @in_transit_tracking_response_document = REXML::Document.new(@in_transit_tracking_response)

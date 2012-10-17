@@ -6,3 +6,4 @@ pkg
 .dotest
 Gemfile.lock
 logs
+test/fixtures.yml

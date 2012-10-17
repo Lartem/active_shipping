@@ -656,7 +656,6 @@ module ActiveMerchant
           service_type = is_saturday_delivery ? "#{service_code}_SATURDAY_DELIVERY" : service_code
           
           currency = handle_incorrect_currency_codes(rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalNetCharge/Currency').to_s)
-          p rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s
           rate_estimates << RateEstimate.new(origin, destination, @@name,
                               self.class.service_name_for_code(service_type),
                               :service_code => service_code,

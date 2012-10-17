@@ -47,6 +47,7 @@ namespace :test do
     t.verbose = true
   end
 
+  #UPS remote tests
   Rake::TestTask.new(:remote_ups) do |t|
     t.libs << "test"
     t.pattern = 'test/remote/ups_test.rb'

@@ -15,9 +15,13 @@ module ActiveMerchant
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
+<<<<<<< HEAD
         :courier_dispatch => 'webservices/Pickup', # webservices
         :shipping => 'ups.app/xml/Ship',
         :address_validation => 'ups.app/xml/AV'
+=======
+        :shipment => 'ups.app/xml/Shipment'
+>>>>>>> UPS shipping  tests, crefit card, and other
       }
       
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -29,6 +33,17 @@ module ActiveMerchant
         :letter_center => "19",
         :air_service_center => "20"
       })
+
+      CREDIT_CARD_TYPES = {
+        '01' => 'American Express',
+        '03' => 'Discover',
+        '04' => 'MasterCard',
+        '05' => 'Optima', 
+        '06' => 'VISA',
+        '07' => 'Bravo',
+        '08' => 'Diners Club' 
+      }
+
 
       CUSTOMER_CLASSIFICATIONS = HashWithIndifferentAccess.new({
         :wholesale => "01",
@@ -144,8 +159,10 @@ module ActiveMerchant
         options = @options.update(options)
         access_request = build_access_request
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
-        p shipping_request
-        #response = commit(save_request(shipping_request), (options[:test] || false)).gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+
+        p access_request + shipping_request
+        #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(:shipment, save_request(access_request + shipping_request), (options[:test] || false))
       end
       
       def validate_addresses(addresses, options={})
@@ -222,10 +239,19 @@ module ActiveMerchant
             #PaymentInformation node
             shipment_node << XmlNode.new('PaymentInformation') do |payment_node|
               payment_node << XmlNode.new('ShipmentCharge') do |shipment_charge_node|
-                type = PICKUP_CODES[options[:pickup_type]] || PICKUP_CODES[:daily_pickup]
-                shipment_charge_node << XmlNode.new('Type', type)
+                shipment_charge_node << XmlNode.new('Type', '01')
                 shipment_charge_node << XmlNode.new('BillShipper') do |bill_shipper_node|
-                  bill_shipper_node << XmlNode.new('AccountNumber', options[:bill_shipper_account_number])
+                  #bill_shipper_node << XmlNode.new('AccountNumber', options[:bill_shipper_account_number]) if options[:bill_shipper_account_number]
+                  if options[:credit_card] 
+                    bill_shipper_node << XmlNode.new('CreditCard') do |credit_card_node|
+                      cc_type = CREDIT_CARD_TYPES.invert[options[:credit_card_type]]
+                      credit_card_node << XmlNode.new('Type', cc_type)
+                      credit_card_node << XmlNode.new('Number', options[:credit_card_number])
+                      credit_card_node << XmlNode.new('ExpirationDate', options[:credit_card_expiration_date])
+                      credit_card_node << XmlNode.new('SecurityCode', options[:credit_card_security_code])
+                      credit_card_node << build_address_node(options[:credit_card_address])
+                    end
+                  end
                 end
 
               end
@@ -267,6 +293,7 @@ module ActiveMerchant
             end
           end
         end
+        xml_request.to_s
       end
       
       def build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
@@ -470,20 +497,24 @@ module ActiveMerchant
           node << XmlNode.new('ShipperNumber', person[:shipper_number]) if node_name == 'Shipper' and person[:shipper_number]
           node << XmlNode.new('FaxNumber', person[:shipper_fax_number]) if node_name == 'Shipper' and person[:shipper_fax_number]
           node << XmlNode.new('EMailAddress', person[:email]) if person[:email]
-          node << XmlNode.new('Address') do |address_node|
-            address_node << XmlNode.new('AddressLine', location.address1) unless location.address1.blank?
-            address_node << XmlNode.new('AddressLine', location.address2) unless location.address2.blank?
-            address_node << XmlNode.new('AddressLine', location.address3) unless location.address3.blank?
-            address_node << XmlNode.new('City', location.city) unless location.city.blank?
-            #Required if shipper is in the US or CA. If Shipper country is US or CA, then the value must be a valid
-            #US State/ Canadian Province code. If the country is Ireland, the StateProvinceCode will contain the county.
-            address_node << XmlNode.new('StateProvinceCode', location.province) unless location.province.blank?
-            address_node << XmlNode.new('PostalCode', location.postal_code) unless location.postal_code.blank?
-            address_node << XmlNode.new('CountryCode', location.country_code(:alpha2)) unless location.country_code(:alpha2).blank?
-            address_node << XmlNode.new("ResidentialAddressIndicator", true) unless location.commercial?
-          end
+          node << build_address_node(location)
 
         end  
+      end
+
+      def build_address_node(location, opts = {})
+        node = XmlNode.new('Address') do |address_node|
+          address_node << XmlNode.new('AddressLine', location.address1) unless location.address1.blank?
+          address_node << XmlNode.new('AddressLine', location.address2) unless location.address2.blank?
+          address_node << XmlNode.new('AddressLine', location.address3) unless location.address3.blank?
+          address_node << XmlNode.new('City', location.city) unless location.city.blank?
+          #Required if shipper is in the US or CA. If Shipper country is US or CA, then the value must be a valid
+          #US State/ Canadian Province code. If the country is Ireland, the StateProvinceCode will contain the county.
+          address_node << XmlNode.new('StateProvinceCode', location.province) unless location.province.blank?
+          address_node << XmlNode.new('PostalCode', location.postal_code) unless location.postal_code.blank?
+          address_node << XmlNode.new('CountryCode', location.country_code(:alpha2)) unless location.country_code(:alpha2).blank?
+          address_node << XmlNode.new("ResidentialAddressIndicator", true) if location.residential?
+        end
       end
       
       def build_location_node(name,location,options={})
@@ -674,7 +705,7 @@ module ActiveMerchant
       end
       
       def commit(action, request, test = false)
-        puts "#{test ? TEST_URL : LIVE_URL}/#{RESOURCES[action]}"
+        p "#{test ? TEST_URL : LIVE_URL}/#{RESOURCES[action]}"
         ssl_post("#{test ? TEST_URL : LIVE_URL}/#{RESOURCES[action]}", request)
       end
       

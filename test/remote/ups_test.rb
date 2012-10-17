@@ -192,4 +192,30 @@ class UPSTest < Test::Unit::TestCase
     end
     end
   end
+
+  def test_shipping_request
+    shipper = {:person_name=>'Joel Gibson', :phone_number=>'8326990301', :shipper_number => '11', :email => 'grindf@gmail.com'}
+    
+    ship_to_person = {:person_name=>'Anton Kartashov', :phone_number=>'3479034569'}
+
+    ship_from_person = {:person_name=>'Joel Gibson', :phone_number=>'8326990301'}
+
+    package = {:weight_units=>'LBS', :weight_value=>'1', :item_description=>'Large Envelope'}
+
+    shipping_response = @carrier.request_shipping(shipper, @locations[:joel_gibson], 
+                                                  ship_to_person, @locations[:anton_kartashov],
+                                                  ship_from_person, @locations[:joel_gibson],
+                                                  package, {:test=>true, 
+                                                            :transaction_reference_id => 'SM-US-0000000100',
+                                                            :pickup_type => 'daily_pickup',
+                                                            #:bill_shipper_account_number => '426F0W',
+                                                            :credit_card => true,
+                                                            :credit_card_type => 'VISA',
+                                                            :credit_card_number => '123456789',
+                                                            :credit_card_expiration_date => '012015',
+                                                            :credit_card_security_code => '483',
+                                                            :credit_card_address => @locations[:cc_address],
+                                                            :service_code => '02',
+                                                            :packaging_type => '01'})
+  end
 end

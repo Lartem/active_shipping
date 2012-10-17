@@ -210,7 +210,14 @@ module ActiveMerchant
                                       :postal_code => '10020',
                                       :address1 => '135, W 50th St',
                                       :address2 => 'Fl 13th',
-                                      :state => 'NY')
+                                      :state => 'NY'),
+        :cc_address => Location.new(
+                                      :country => 'US',
+                                      :city => 'Houston',
+                                      :postal_code => '77060',
+                                      :address1 => '11811 North Freeway',
+                                      :address2 => 'Suite 500',
+                                      :state => 'TX')
       }
       
     end

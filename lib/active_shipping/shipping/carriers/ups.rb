@@ -15,13 +15,10 @@ module ActiveMerchant
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
-<<<<<<< HEAD
         :courier_dispatch => 'webservices/Pickup', # webservices
-        :shipping => 'ups.app/xml/Ship',
+        #:shipping => 'ups.app/xml/ShipConfirm',
+        :shipping => 'webservices/Ship',
         :address_validation => 'ups.app/xml/AV'
-=======
-        :shipment => 'ups.app/xml/Shipment'
->>>>>>> UPS shipping  tests, crefit card, and other
       }
       
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -143,7 +140,11 @@ module ActiveMerchant
         packages = Array(packages)
         access_request = build_access_request
         rate_request = build_rate_request(origin, destination, packages, options)
+        p 'Rate request'
+        p access_request + rate_request
         response = commit(:rates, save_request(access_request + rate_request), (options[:test] || false))
+        p 'Rate response'
+        p response
         parse_rate_response(origin, destination, packages, response, options)
       end
       
@@ -151,18 +152,21 @@ module ActiveMerchant
         options = @options.update(options)
         access_request = build_access_request
         tracking_request = build_tracking_request(tracking_number, options)
+        p access_request + tracking_request
         response = commit(:track, save_request(access_request + tracking_request), (options[:test] || false))
         parse_tracking_response(response, options)
       end
 
       def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
         options = @options.update(options)
-        access_request = build_access_request
+        #access_request = build_access_request
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
 
-        p access_request + shipping_request
+        p shipping_request
         #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        response = commit(:shipment, save_request(access_request + shipping_request), (options[:test] || false))
+        response = commit(:shipping, save_request(shipping_request), (options[:test] || false))
+        p 'shipment response'
+        p response
       end
       
       def validate_addresses(addresses, options={})
@@ -177,17 +181,13 @@ module ActiveMerchant
         options = @options.update(options)
         access_request = build_ws_access_request
         courier_dispatch_request = build_courier_dispatch_request(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
-        puts
+        puts 'Courier dispatch request'
         p courier_dispatch_request
         response = commit(:courier_dispatch, save_request(courier_dispatch_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         puts 'response!'
         p response
         puts
         parse_courier_dispatch_response(response, options)
-      end
-
-      def request_shipping()
-        #TODO
       end
 
       protected
@@ -209,10 +209,24 @@ module ActiveMerchant
       end
 
       def build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
-        xml_request = XmlNode.new('ShipmentRequest',
-          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 
-          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance') do |root_node|
+        xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
+          'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:common' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:wsf' => 'http://www.ups.com/schema/wsf') do |env_node|
+          env_node << XmlNode.new('envr:Header') do |h_node|
+            h_node << build_ws_access_request
+          end
+          env_node << XmlNode.new('envr:Body') do |body_node| 
+            body_node << build_shipping_request_body(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
+          end
+        end
+        xml_request.to_s
+      end
+
+      def build_shipping_request_body(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
+        xml_request = XmlNode.new('ShipmentRequest',{'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |root_node|
           #Request node
+
           root_node << XmlNode.new('Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0') do |request_node|
             request_node << XmlNode.new('RequestOption', 'nonvalidate')
             if options[:transaction_reference_id]
@@ -241,7 +255,9 @@ module ActiveMerchant
               payment_node << XmlNode.new('ShipmentCharge') do |shipment_charge_node|
                 shipment_charge_node << XmlNode.new('Type', '01')
                 shipment_charge_node << XmlNode.new('BillShipper') do |bill_shipper_node|
-                  #bill_shipper_node << XmlNode.new('AccountNumber', options[:bill_shipper_account_number]) if options[:bill_shipper_account_number]
+
+                  #bill_shipper_node << XmlNode.new('AccountNumber', shipper[:shipper_number]) 
+                  #if options[:bill_shipper_account_number]
                   if options[:credit_card] 
                     bill_shipper_node << XmlNode.new('CreditCard') do |credit_card_node|
                       cc_type = CREDIT_CARD_TYPES.invert[options[:credit_card_type]]
@@ -293,7 +309,7 @@ module ActiveMerchant
             end
           end
         end
-        xml_request.to_s
+        xml_request
       end
       
       def build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)

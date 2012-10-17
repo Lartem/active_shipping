@@ -656,15 +656,16 @@ module ActiveMerchant
           service_type = is_saturday_delivery ? "#{service_code}_SATURDAY_DELIVERY" : service_code
           
           currency = handle_incorrect_currency_codes(rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalNetCharge/Currency').to_s)
+          p rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s
           rate_estimates << RateEstimate.new(origin, destination, @@name,
                               self.class.service_name_for_code(service_type),
                               :service_code => service_code,
                               :total_price => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalNetCharge/Amount').to_s.to_f,
                               :currency => currency,
                               :packages => packages,
-                              :delivery_range => [rated_shipment.get_text('DeliveryTimestamp').to_s] * 2)
+                              :delivery_range => [rated_shipment.get_text('DeliveryTimestamp').to_s] * 2,
+                              :dim => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s == 'DIM')
 	    end
-		
         if rate_estimates.empty?
           success = false
           message = "No shipping rates could be found for the destination address" if message.blank?

@@ -15,9 +15,10 @@ module ActiveMerchant
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
-        :courier_dispatch => 'webservices/Pickup', # webservices
-        :shipping => 'webservices/Ship',
-        :address_validation => 'ups.app/xml/AV'
+        :address_validation => 'ups.app/xml/AV',
+        :shipping => 'webservices/Ship', # webservices
+        :address_validation_street => 'webservices/XAV',
+        :courier_dispatch => 'webservices/Pickup'
       }
       
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -171,13 +172,20 @@ module ActiveMerchant
         options = @options.update(options)
         access_request = build_access_request
         address_validation_city_request = build_address_validation_city_request(address, options)
-        p 'Address validation request'
+        p 'Address city validation request'
         #UPS API wants to see <?xml ..?> tags in this request
         req = "<?xml version='1.0'?>" + access_request +"<?xml version='1.0'?>"+ address_validation_city_request
         p req
         response_city_validation = commit(:address_validation, save_request(req), (options[:test] || false))
         p 'Address validation response_city_validation'
         p response_city_validation
+
+        address_street_validation_request = build_address_validation_street_request(address, options)
+        p address_street_validation_request
+
+        response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (options[:test] || false))
+        p response_street_validation
+
       end
 
       def check_pickup_availability()
@@ -198,7 +206,7 @@ module ActiveMerchant
       end
 
       protected
-      
+
       def build_address_validation_city_request(address, options={})
         xml_request = XmlNode.new('AddressValidationRequest') do |root_node|
           root_node << XmlNode.new('Request') do |request_node|
@@ -213,6 +221,38 @@ module ActiveMerchant
           end
         end
         xml_request.to_s
+      end
+
+      def build_address_validation_street_request(address, options={})
+        xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
+          'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:common' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:wsf' => 'http://www.ups.com/schema/wsf') do |env_node|
+          env_node << XmlNode.new('envr:Header') do |h_node|
+            h_node << build_ws_access_request
+          end
+          env_node << XmlNode.new('envr:Body') do |body_node| 
+            body_node << build_address_validation_street_request_body(address, options)
+          end
+        end
+        xml_request.to_s
+      end  
+
+      def build_address_validation_street_request_body(address, options = {})
+        xml_request = XmlNode.new('XAVRequest', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/xav/v1.0', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |root_node|
+          root_node << XmlNode.new('Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0') do |request_node|
+            request_node << XmlNode.new('RequestOption', '3')
+          end
+
+          root_node << XmlNode.new('AddressKeyFormat') do |address_key_node|
+            address_key_node << XmlNode.new('AddressLine', address.address1) unless address.address1.blank?
+            address_key_node << XmlNode.new('PoliticalDivision2', address.city) unless address.city.blank?
+            address_key_node << XmlNode.new('PoliticalDivision1', address.state) unless address.state.blank?          
+            address_key_node << XmlNode.new('PostcodePrimaryLow', address.postal_code) unless address.postal_code.blank?
+            #address_key_node << XmlNode.new('PostcodeExtendedLow', options[:extended_postal_code]) unless options[:extended_postal_code]
+            address_key_node << XmlNode.new('CountryCode', address.country_code(:alpha2)) unless address.country.blank?
+          end
+        end
       end
 
       def build_courier_dispatch_request( pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)

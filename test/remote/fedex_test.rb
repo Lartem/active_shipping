@@ -192,14 +192,13 @@ class FedExTest < Test::Unit::TestCase
   end
 
   def test_address_validation_bug
-      p @carrier_prod.validate_addresses({'address_from' => Location.new(
-                                      :country => 'US',
-                                      :city => 'Akron',
-                                      :zip => '44320'), 
-        'address_to' => Location.new(:country => 'US',
-                                      :city => 'Benton City',
-                                      :zip => '65232')})
-
+    @carrier_prod.validate_addresses({'address_from' => Location.new(
+                                    :country => 'US',
+                                    :city => 'Akron',
+                                    :zip => '44320'), 
+      'address_to' => Location.new(:country => 'US',
+                                    :city => 'Benton City',
+                                    :zip => '65232')})
   end
 
   def test_courier_dispatch

@@ -16,7 +16,6 @@ module ActiveMerchant
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
         :courier_dispatch => 'webservices/Pickup', # webservices
-        #:shipping => 'ups.app/xml/ShipConfirm',
         :shipping => 'webservices/Ship',
         :address_validation => 'ups.app/xml/AV'
       }
@@ -154,23 +153,31 @@ module ActiveMerchant
         tracking_request = build_tracking_request(tracking_number, options)
         p access_request + tracking_request
         response = commit(:track, save_request(access_request + tracking_request), (options[:test] || false))
+        p 'Tracking response'
+        p response
         parse_tracking_response(response, options)
       end
 
       def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
         options = @options.update(options)
-        #access_request = build_access_request
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
-
-        p shipping_request
         #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         response = commit(:shipping, save_request(shipping_request), (options[:test] || false))
-        p 'shipment response'
-        p response
       end
       
-      def validate_addresses(addresses, options={})
-        #TODO
+      #
+      # UPS Address validation schema contains only one address container
+      def validate_address(address, options={})
+        options = @options.update(options)
+        access_request = build_access_request
+        address_validation_city_request = build_address_validation_city_request(address, options)
+        p 'Address validation request'
+        #UPS API wants to see <?xml ..?> tags in this request
+        req = "<?xml version='1.0'?>" + access_request +"<?xml version='1.0'?>"+ address_validation_city_request
+        p req
+        response_city_validation = commit(:address_validation, save_request(req), (options[:test] || false))
+        p 'Address validation response_city_validation'
+        p response_city_validation
       end
 
       def check_pickup_availability()
@@ -191,7 +198,22 @@ module ActiveMerchant
       end
 
       protected
-
+      
+      def build_address_validation_city_request(address, options={})
+        xml_request = XmlNode.new('AddressValidationRequest') do |root_node|
+          root_node << XmlNode.new('Request') do |request_node|
+            request_node << XmlNode.new('RequestAction', 'AV')
+          end
+          #Note that AV request contains only City, StateProvinceCode, CountryCode and PostalCode fields
+          root_node << XmlNode.new('Address') do |address_node|
+            address_node << XmlNode.new('City', address.city) unless address.city.blank?
+            address_node << XmlNode.new('StateProvinceCode', address.state) unless address.state.blank?
+            address_node << XmlNode.new('CountryCode', address.country_code) unless address.country_code.blank?
+            address_node << XmlNode.new('PostalCode', address.postal_code) unless address.postal_code.blank?
+          end
+        end
+        xml_request.to_s
+      end
 
       def build_courier_dispatch_request( pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil)
         xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 

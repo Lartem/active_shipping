@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<AddressValidationResponse>
+  <Response>
+    <TransactionReference>
+    </TransactionReference>
+    <ResponseStatusCode>1</ResponseStatusCode>
+    <ResponseStatusDescription>Success</ResponseStatusDescription>
+  </Response>
+  <AddressValidationResult>
+    <Rank>1</Rank>
+    <Quality>1.0</Quality>
+    <Address>
+      <City>BEVERLY HILLS</City>
+      <StateProvinceCode>CA</StateProvinceCode>
+    </Address>
+    <PostalCodeLowEnd>90209</PostalCodeLowEnd>
+    <PostalCodeHighEnd>90213</PostalCodeHighEnd>
+  </AddressValidationResult>
+</AddressValidationResponse>

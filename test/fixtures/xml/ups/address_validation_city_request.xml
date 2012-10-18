@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<AccessRequest>
+  <AccessLicenseNumber>BC90F6B48ADDFB10</AccessLicenseNumber>
+  <UserId>SmaileX.com</UserId>
+  <Password>Delivery13</Password>
+</AccessRequest>
+<?xml version='1.0'?>
+<AddressValidationRequest>
+  <Request>
+    <RequestAction>AV</RequestAction>
+  </Request>
+  <Address>
+    <City>Beverly Hills</City>
+    <StateProvinceCode>CA</StateProvinceCode>
+    <CountryCode>US</CountryCode>
+    <PostalCode>90210</PostalCode>
+  </Address>
+</AddressValidationRequest>

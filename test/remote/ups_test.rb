@@ -218,4 +218,11 @@ class UPSTest < Test::Unit::TestCase
                                                             :service_code => '02',
                                                             :packaging_type => '01'})
   end
+
+  def test_address_validation
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.validate_address(@locations[:beverly_hills], {:test => true})
+    end
+  end
 end

@@ -495,6 +495,7 @@ module ActiveMerchant
           #options
           root_node << XmlNode.new('Options', VALIDATION_XMLNS) do |options_node|
             options_node << XmlNode.new('VerifyAddresses', true)
+            options_node << XmlNode.new('CheckResidentialStatus', true)
             options_node << XmlNode.new('MaximumNumberOfMatches', options[:av_max_matches] || 2)
             options_node << XmlNode.new('StreetAccuracy', options[:av_str_accuracy] || 'LOOSE')
             options_node << XmlNode.new('ConvertToUpperCase', true)
@@ -778,7 +779,8 @@ module ActiveMerchant
                   :city => address_node.get_text('City').to_s,
                   :province => address_node.get_text('StateOrProvinceCode').to_s,
                   :postal_code => address_node.get_text('PostalCode').to_s,
-                  :country => address_node.get_text('CountryCode').to_s
+                  :country => address_node.get_text('CountryCode').to_s,
+                  :address_type => address_details_node.get_text('ResidentialStatus').to_s.downcase 
                 )
                 addresses.merge!({address_id => AddressValidationDetails.new(location, score, address_id, changes, delivery_point_validation)})
               end

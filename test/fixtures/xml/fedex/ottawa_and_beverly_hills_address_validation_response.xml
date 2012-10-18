@@ -19,6 +19,7 @@
     <v2:ProposedAddressDetails>
       <v2:Score>100</v2:Score>
       <v2:Changes>NO_CHANGES</v2:Changes>
+      <v2:ResidentialStatus>BUSINESS</v2:ResidentialStatus>
       <v2:DeliveryPointValidation>UNAVAILABLE</v2:DeliveryPointValidation>
       <v2:CompanyName>CITY OF OTTAWA</v2:CompanyName>
       <v2:Address>
@@ -97,6 +98,7 @@
       <v2:Changes>MODIFIED_TO_ACHIEVE_MATCH</v2:Changes>
       <v2:Changes>NORMALIZED</v2:Changes>
       <v2:Changes>APARTMENT_NUMBER_NOT_FOUND</v2:Changes>
+      <v2:ResidentialStatus>RESIDENTIAL</v2:ResidentialStatus>
       <v2:DeliveryPointValidation>UNCONFIRMED</v2:DeliveryPointValidation>
       <v2:Address>
         <v2:StreetLines>455 N REXFORD DR FL 3</v2:StreetLines>

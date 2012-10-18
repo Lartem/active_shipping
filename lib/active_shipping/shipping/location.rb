@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Shipping #:nodoc:
     class Location
-      ADDRESS_TYPES = %w{residential commercial po_box}
+      ADDRESS_TYPES = %w{residential commercial business po_box}
       
       attr_reader :options,
                   :country,
@@ -82,7 +82,7 @@ module ActiveMerchant #:nodoc:
       end
       
       def residential?; @address_type == 'residential' end
-      def commercial?; @address_type == 'commercial' end
+      def commercial?; @address_type == 'commercial' || @address_type == 'business' end
       def po_box?; @address_type == 'po_box' end
 
       def address_type=(value)

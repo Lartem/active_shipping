@@ -22,6 +22,7 @@
   <RequestTimestamp>2009-07-20T12:01:55-04:00</RequestTimestamp>
   <Options xmlns='http://fedex.com/ws/addressvalidation/v2'>
     <VerifyAddresses>true</VerifyAddresses>
+    <CheckResidentialStatus>true</CheckResidentialStatus>
     <MaximumNumberOfMatches>2</MaximumNumberOfMatches>
     <StreetAccuracy>LOOSE</StreetAccuracy>
     <ConvertToUpperCase>true</ConvertToUpperCase>

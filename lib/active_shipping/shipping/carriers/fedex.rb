@@ -806,11 +806,14 @@ module ActiveMerchant
       end
 
       def parse_parsed_elements(parsed_address_node, node_name)
-        parsed_address_node.elements[node_name].elements.inject('Elements', []) do |acc, element|
-          name = element.get_text('Name')
-          value = element.get_text('Value')
-          local_changes = element.get_text('Changes')
-          acc << ParsedAddressValidationElement.new(name, value, local_changes)
+        node = parsed_address_node.elements[node_name]
+        if node != nil
+          node.elements.inject('Elements', []) do |acc, element|
+            name = element.get_text('Name')
+            value = element.get_text('Value')
+            local_changes = element.get_text('Changes')
+            acc << ParsedAddressValidationElement.new(name, value, local_changes)
+          end
         end
       end
 

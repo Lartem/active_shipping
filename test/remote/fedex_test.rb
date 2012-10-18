@@ -180,15 +180,26 @@ class FedExTest < Test::Unit::TestCase
       # response = @carrier_prod.check_pickup_availability(@locations[:ottawa], 
       #   [:same_day, :future_day], Date.new(2012,8,20), Time.new(2012, 8, 10, 16), 
       #   Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => false)
-      response = @carrier_prod.check_pickup_availability(Location.new({:country => 'US',
-                                      :state => 'NY',
-                                      :city => 'Brooklyn',
-                                      :address1 => '7 Balfour pl',
-                                      :address2 => 'Apt E3',
-                                      :zip => '11225'}),
-      [:same_day, :future_day], Date.new(2012,8,20), Time.new(2012, 10, 19, 16), 
+      response = @carrier_prod.check_pickup_availability(Location.new(:country => 'US',
+                                      :state => 'TX',
+                                      :city => 'Houston',
+                                      :address1 => '11811 North Freeway',
+                                      :address2 => 'suite 500',
+                                      :zip => '77060'),
+      [:same_day, :future_day], Date.new(2012,8,19), Time.new(2012, 10, 19, 10), 
         Time.new(1970, 1, 1, 16), ['fedex_express'], @packages.values_at(:american_wii), :test => false)
     end
+  end
+
+  def test_address_validation_bug
+      p @carrier_prod.validate_addresses({'address_from' => Location.new(
+                                      :country => 'US',
+                                      :city => 'Akron',
+                                      :zip => '44320'), 
+        'address_to' => Location.new(:country => 'US',
+                                      :city => 'Benton City',
+                                      :zip => '65232')})
+
   end
 
   def test_courier_dispatch

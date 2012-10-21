@@ -28,6 +28,12 @@ namespace :test do
     t.verbose = true
   end
 
+  Rake::TestTask.new(:production_fedex) do |t|
+    t.libs << "test"
+    t.pattern = 'test/remote/fedex_prod_test.rb'
+    t.verbose = true
+  end
+
   Rake::TestTask.new(:units_ups) do |t|
     t.libs << "test"
     t.pattern = 'test/unit/**/ups_test.rb'

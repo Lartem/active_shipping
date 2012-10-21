@@ -245,17 +245,17 @@ module ActiveMerchant
         cancel_request = build_cancel_pickup_request(pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options)
         log(:cancel_pickup, cancel_request)
         response = commit(save_request(cancel_request), (options[:test] || false))
-        log(:request_shipping, response)
+        log(:cancel_pickup, response)
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)
       end
 
-      def cancel_shipment tracking_number, ship_timestamp, form_id, tracking_id_type, options={}
+      def cancel_shipping tracking_number, ship_timestamp, form_id, tracking_id_type, options={}
         options = @options
         delete_request = build_cancel_shipment_request(tracking_number, ship_timestamp, form_id, tracking_id_type, options)
-        log(:cancel_request, delete_request)
+        log(:cancel_shipping, delete_request)
         response = commit(save_request(delete_request), (options[:test] || false))
-        log(:cancel_request, response)
+        log(:cancel_shipping, response)
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_cancel_pickup_response(response, options)        
       end
@@ -271,7 +271,7 @@ module ActiveMerchant
           root_node << build_version_node('ship', 12, 1, 0, 'xmlns' => 'http://fedex.com/ws/ship/v12')
           root_node << XmlNode.new('ShipTimestamp', ship_timestamp)
           root_node << XmlNode.new('TrackingId') do |tracking_id_node|
-            tracking_id_node << XmlNode.new('TrackingIdType', tracking_id_type)
+            tracking_id_node << XmlNode.new('TrackingIdType', 'EXPRESS')
             tracking_id_node << XmlNode.new('FormId', form_id)
             tracking_id_node << XmlNode.new('TrackingNumber', tracking_number)
           end

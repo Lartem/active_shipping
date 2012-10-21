@@ -9,7 +9,7 @@ module ActiveMerchant #:nodoc:
       def initialize(success, message, params = {}, options = {})
         @carrier = options[:carrier].parameterize.to_sym
         @carrier_name = options[:carrier]
-        @pickup_options = options[:shipment_details]
+        @shipment_details = options[:shipment_details]
         super
       end
     end

@@ -155,7 +155,7 @@ class UPSTest < Test::Unit::TestCase
     assert Package.new((150 * 16) - 0.01, [5,5,5], :units => :imperial).mass < @carrier.maximum_weight
   end
 
-  def test_shipping
+  def test_shipping_request
     shipper = {
                 :person_name=>'Joel Gibson', 
                 :phone_number=>'8326990301',
@@ -173,7 +173,7 @@ class UPSTest < Test::Unit::TestCase
 
     package = {:weight_units=>'LBS', :weight_value=>'1', :item_description=>'Large Envelope'}
 
-    mock_response = xml_fixture('ups/shipping_response')
+    mock_response = xml_fixture('ups/shipping_response').gsub(/[\t\n\r]/, '')
     @carrier.expects(:commit).returns(mock_response)
 
     shipping_response = @carrier.request_shipping(shipper, @locations[:joel_gibson], 
@@ -182,12 +182,12 @@ class UPSTest < Test::Unit::TestCase
                                                   package, {:test=>true, 
                                                             :transaction_reference_id => 'SM-US-0000000100',
                                                             :pickup_type => 'daily_pickup',
-                                                            #:bill_shipper_account_number => '426F0W',
-                                                            :credit_card => true,
-                                                            :credit_card_type => 'VISA',
-                                                            :credit_card_number => '123456789',
-                                                            :credit_card_expiration_date => '012015',
-                                                            :credit_card_security_code => '483',
+                                                            # :bill_shipper_account_number => '426F0W',
+                                                            # :credit_card => true,
+                                                            # :credit_card_type => 'MasterCard',
+                                                            # :credit_card_number => '0123456789',
+                                                            # :credit_card_expiration_date => '012015',
+                                                            # :credit_card_security_code => '111',
                                                             :credit_card_address => @locations[:cc_address],
                                                             :service_code => '02',
                                                             :packaging_type => '01'})

@@ -200,7 +200,7 @@ class UPSTest < Test::Unit::TestCase
 
     ship_from_person = {:person_name=>'Joel Gibson', :phone_number=>'8326990301'}
 
-    package = {:weight_units=>'LBS', :weight_value=>'1', :item_description=>'Large Envelope'}
+    package = {:weight_units=>'LBS', :weight_value=>'0.5', :item_description=>'Large Envelope', :declared_value=>'150'}
 
     shipping_response = @carrier.request_shipping(shipper, @locations[:joel_gibson], 
                                                   ship_to_person, @locations[:anton_kartashov],
@@ -208,15 +208,17 @@ class UPSTest < Test::Unit::TestCase
                                                   package, {:test=>true, 
                                                             :transaction_reference_id => 'SM-US-0000000100',
                                                             :pickup_type => 'daily_pickup',
-                                                            #:bill_shipper_account_number => '426F0W',
-                                                            :credit_card => true,
-                                                            :credit_card_type => 'MasterCard',
-                                                            :credit_card_number => '5101267751922388',
-                                                            :credit_card_expiration_date => '012015',
-                                                            :credit_card_security_code => '483',
+                                                            # :bill_shipper_account_number => '426F0W',
+                                                            # :credit_card => true,
+                                                            # :credit_card_type => 'MasterCard',
+                                                            # :credit_card_number => '0123456789',
+                                                            # :credit_card_expiration_date => '012015',
+                                                            # :credit_card_security_code => '111',
                                                             :credit_card_address => @locations[:cc_address],
                                                             :service_code => '02',
                                                             :packaging_type => '01'})
+    assert shipping_response.success?, shipping_response.message
+  
   end
 
   def test_address_validation

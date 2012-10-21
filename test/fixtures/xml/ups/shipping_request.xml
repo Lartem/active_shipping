@@ -1,88 +1,118 @@
-<?xml version="1.0"?>
-<ShipmentRequest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <Request xmlns="http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0">
-    <RequestOption>nonvalidate</RequestOption>
-    <TransactionReference>
-      <TransactionIdentifier>SM-US-0000000100</TransactionIdentifier>
-    </TransactionReference>
-  </Request>
-  <Shipment xmlns="http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0">
-    <Description>Large Envelope</Description>
-    <Shipper>
-      <Name>Joel Gibson</Name>
-      <Phone>
-        <Number>8326990301</Number>
-      </Phone>
-      <ShipperNumber>11</ShipperNumber>
-      <EMailAddress>grindf@gmail.com</EMailAddress>
-      <Address>
-        <AddressLine>Apt E3, 7, Balfour Pl</AddressLine>
-        <City>Brooklyn</City>
-        <StateProvinceCode>NY</StateProvinceCode>
-        <PostalCode>11225</PostalCode>
-        <CountryCode>US</CountryCode>
-      </Address>
-    </Shipper>
-    <ShipTo>
-      <Name>Anton Kartashov</Name>
-      <Phone>
-        <Number>3479034569</Number>
-      </Phone>
-      <Address>
-        <AddressLine>Fl 13th, 135, W 50th St</AddressLine>
-        <City>Manhattan</City>
-        <StateProvinceCode>NY</StateProvinceCode>
-        <PostalCode>10020</PostalCode>
-        <CountryCode>US</CountryCode>
-      </Address>
-    </ShipTo>
-    <ShipFrom>
-      <Name>Joel Gibson</Name>
-      <Phone>
-        <Number>8326990301</Number>
-      </Phone>
-      <Address>
-        <AddressLine>Apt E3, 7, Balfour Pl</AddressLine>
-        <City>Brooklyn</City>
-        <StateProvinceCode>NY</StateProvinceCode>
-        <PostalCode>11225</PostalCode>
-        <CountryCode>US</CountryCode>
-      </Address>
-    </ShipFrom>
-    <PaymentInformation>
-      <ShipmentCharge>
-        <Type>01</Type>
-        <BillShipper>
-          <AccountNumber>426F0W</AccountNumber>
-        </BillShipper>
-      </ShipmentCharge>
-    </PaymentInformation>
-    <Service>
-      <Code>02</Code>
-      <Description>02</Description>
-    </Service>
-    <Package>
-      <Description>Large Envelope</Description>
-      <Packaging>
-        <Code>01</Code>
-      </Packaging>
-      <PackageWeight>
-        <UnitOfMeasurement>
-          <Code>LBS</Code>
-        </UnitOfMeasurement>
-        <Weight>1</Weight>
-      </PackageWeight>
-      <PackageServiceOptions>
-        <DeclaredValue>
-          <CurrencyCode>USD</CurrencyCode>
-          <MonetaryValue>100</MonetaryValue>
-        </DeclaredValue>
-      </PackageServiceOptions>
-    </Package>
-  </Shipment>
-  <LabelSpecification xmlns="http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0">
-    <LabelImageFormat>
-      <Code>GIF</Code>
-    </LabelImageFormat>
-  </LabelSpecification>
-</ShipmentRequest>
+<envr:Envelope xmlns:auth='http://www.ups.com/schema/xpci/1.0/auth' xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns:envr='http://schemas.xmlsoap.org/soap/envelope/' xmlns:upss='http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0' xmlns:wsf='http://www.ups.com/schema/wsf' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+	<envr:Header>
+		<upss:UPSSecurity>
+			<upss:UsernameToken>
+				<upss:Username>SmaileX.com</upss:Username>
+				<upss:Password>Delivery13</upss:Password>
+			</upss:UsernameToken>
+			<upss:ServiceAccessToken>
+				<upss:AccessLicenseNumber>BC90F6B48ADDFB10</upss:AccessLicenseNumber>
+			</upss:ServiceAccessToken>
+		</upss:UPSSecurity>
+	</envr:Header>
+	<envr:Body>
+		<ShipmentRequest xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns='http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+			<Request xmlns='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'>
+				<RequestOption>nonvalidate</RequestOption>
+				<TransactionReference>
+					<TransactionIdentifier>SM-US-0000000100</TransactionIdentifier>
+				</TransactionReference>
+			</Request>
+			<Shipment xmlns='http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0'>
+				<Description>Large Envelope</Description>
+				<Shipper>
+					<Name>Joel Gibson</Name>
+					<Phone>
+						<Number>8326990301</Number>
+					</Phone>
+					<ShipperNumber>426F0W</ShipperNumber>
+					<EMailAddress>grindf@gmail.com</EMailAddress>
+					<Address>
+						<AddressLine>7, Balfour Pl</AddressLine>
+						<AddressLine>Apt E3</AddressLine>
+						<City>Brooklyn</City>
+						<StateProvinceCode>NY</StateProvinceCode>
+						<PostalCode>11225</PostalCode>
+						<CountryCode>US</CountryCode>
+					</Address>
+				</Shipper>
+				<ShipTo>
+					<Name>Anton Kartashov</Name>
+					<Phone>
+						<Number>3479034569</Number>
+					</Phone>
+					<Address>
+						<AddressLine>135, W 50th St</AddressLine>
+						<AddressLine>Fl 13th</AddressLine>
+						<City>Manhattan</City>
+						<StateProvinceCode>NY</StateProvinceCode>
+						<PostalCode>10020</PostalCode>
+						<CountryCode>US</CountryCode>
+					</Address>
+				</ShipTo>
+				<ShipFrom>
+					<Name>Joel Gibson</Name>
+					<Phone>
+						<Number>8326990301</Number>
+					</Phone>
+					<Address>
+						<AddressLine>7, Balfour Pl</AddressLine>
+						<AddressLine>Apt E3</AddressLine>
+						<City>Brooklyn</City>
+						<StateProvinceCode>NY</StateProvinceCode>
+						<PostalCode>11225</PostalCode>
+						<CountryCode>US</CountryCode>
+					</Address>
+				</ShipFrom>
+				<PaymentInformation>
+					<ShipmentCharge>
+						<Type>01</Type>
+						<BillShipper>
+							<CreditCard>
+								<Type>04</Type>
+								<Number>5101267751922388</Number>
+								<ExpirationDate>012015</ExpirationDate>
+								<SecurityCode>483</SecurityCode>
+								<Address>
+									<AddressLine>11811 North Freeway</AddressLine>
+									<AddressLine>Suite 500</AddressLine>
+									<City>Houston</City>
+									<StateProvinceCode>TX</StateProvinceCode>
+									<PostalCode>77060</PostalCode>
+									<CountryCode>US</CountryCode>
+								</Address>
+							</CreditCard>
+						</BillShipper>
+					</ShipmentCharge>
+				</PaymentInformation>
+				<Service>
+					<Code>02</Code>
+					<Description>UPS Second Day Air</Description>
+				</Service>
+				<Package>
+					<Description>Large Envelope</Description>
+					<Packaging>
+						<Code>01</Code>
+					</Packaging>
+					<PackageWeight>
+						<UnitOfMeasurement>
+							<Code>LBS</Code>
+						</UnitOfMeasurement>
+						<Weight>0.5</Weight>
+					</PackageWeight>
+				</Package>
+				<PackageServiceOptions>
+					<DeclaredValue>
+						<CurrencyCode>USD</CurrencyCode>
+						<MonetaryValue>100</MonetaryValue>
+					</DeclaredValue>
+				</PackageServiceOptions>
+			</Shipment>
+			<LabelSpecification xmlns='http://www.ups.com/XMLSchema/XOLTWS/Ship/v1.0'>
+				<LabelImageFormat>
+					<Code>GIF</Code>
+				</LabelImageFormat>
+			</LabelSpecification>
+		</ShipmentRequest>
+	</envr:Body>
+</envr:Envelope>

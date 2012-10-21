@@ -128,7 +128,14 @@ module ActiveMerchant
       
       US_TERRITORIES_TREATED_AS_COUNTRIES = ["AS", "FM", "GU", "MH", "MP", "PW", "PR", "VI"]
 
-
+      #Shipment response structures
+      ShipmentResult = Struct.new(:shipment_charges, :billing_weight, :shipment_identification_number, :package_results)
+      ShipmentCharges = Struct.new(:transportation_charges, :service_options_charges, :total_charges)
+      Charge = Struct.new(:currency_code, :monetary_value)
+      BillingWeight = Struct.new(:unit_of_measurement, :weight)
+      UnitOfMeasurement = Struct.new(:code, :description)
+      PackageResult = Struct.new(:tracking_number, :service_options_charges, :shipping_label)
+      ShippingLabel = Struct.new(:image_format, :graphic_image_base64, :html_image_base64)
       
       def requirements
         [:key, :login, :password]
@@ -162,8 +169,10 @@ module ActiveMerchant
       def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
         options = @options.update(options)
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
-        #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        
         response = commit(:shipping, save_request(shipping_request), (options[:test] || false))
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_shipping_response(response, options)
       end
       
       #
@@ -318,18 +327,18 @@ module ActiveMerchant
                 shipment_charge_node << XmlNode.new('Type', '01')
                 shipment_charge_node << XmlNode.new('BillShipper') do |bill_shipper_node|
 
-                  #bill_shipper_node << XmlNode.new('AccountNumber', shipper[:shipper_number]) 
+                  bill_shipper_node << XmlNode.new('AccountNumber', shipper[:shipper_number]) 
                   #if options[:bill_shipper_account_number]
-                  if options[:credit_card] 
-                    bill_shipper_node << XmlNode.new('CreditCard') do |credit_card_node|
-                      cc_type = CREDIT_CARD_TYPES.invert[options[:credit_card_type]]
-                      credit_card_node << XmlNode.new('Type', cc_type)
-                      credit_card_node << XmlNode.new('Number', options[:credit_card_number])
-                      credit_card_node << XmlNode.new('ExpirationDate', options[:credit_card_expiration_date])
-                      credit_card_node << XmlNode.new('SecurityCode', options[:credit_card_security_code])
-                      credit_card_node << build_address_node(options[:credit_card_address])
-                    end
-                  end
+                  # if options[:credit_card] 
+                  #   bill_shipper_node << XmlNode.new('CreditCard') do |credit_card_node|
+                  #     cc_type = CREDIT_CARD_TYPES.invert[options[:credit_card_type]]
+                  #     credit_card_node << XmlNode.new('Type', cc_type)
+                  #     credit_card_node << XmlNode.new('Number', options[:credit_card_number])
+                  #     credit_card_node << XmlNode.new('ExpirationDate', options[:credit_card_expiration_date])
+                  #     credit_card_node << XmlNode.new('SecurityCode', options[:credit_card_security_code])
+                  #     credit_card_node << build_address_node(options[:credit_card_address])
+                  #   end
+                  # end
                 end
 
               end
@@ -359,7 +368,7 @@ module ActiveMerchant
             shipment_node << XmlNode.new('PackageServiceOptions') do |package_service_options_node|
               package_service_options_node << XmlNode.new('DeclaredValue') do |declared_value_node|
                 declared_value_node << XmlNode.new('CurrencyCode', package_item[:currency_code] || 'USD')
-                declared_value_node << XmlNode.new('MonetaryValue', package_item[:monetary_value] || '100')
+                declared_value_node << XmlNode.new('MonetaryValue', package_item[:declared_value] || '100')
               end
             end
           end #End Shipment node
@@ -624,6 +633,47 @@ module ActiveMerchant
           end
         end
       end
+
+      def parse_shipping_response(response, options={})
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['Envelope']
+        success = response_success?(xml)
+        message = response_message(xml)
+        shipment_result = nil
+
+        if success
+          shipment_result_node = xml.elements['/Envelope/Body/ShipmentResponse/ShipmentResults']
+          shipment_charges_node = shipment_result_node.elements['ShipmentCharges']
+
+          transportation_charges = Charge.new(shipment_charges_node.get_text('TransportationCharges/CurrencyCode'), shipment_charges_node.get_text('TransportationCharges/MonetaryValue'))
+          service_options_charges = Charge.new(shipment_charges_node.get_text('ServiceOptionsCharges/CurrencyCode'), shipment_charges_node.get_text('ServiceOptionsCharges/MonetaryValue'))
+          total_charges = Charge.new(shipment_charges_node.get_text('TotalCharges/CurrencyCode'), shipment_charges_node.get_text('TotalCharges/MonetaryValue'))
+          shipment_charges = ShipmentCharges.new(transportation_charges, service_options_charges, total_charges)         
+          
+          billing_weight_uom = UnitOfMeasurement.new(shipment_result_node.get_text('BillingWeight/UnitOfMeasurement/Code'), shipment_result_node.get_text('BillingWeight/UnitOfMeasurement/Description'))
+          billing_weight = BillingWeight.new(billing_weight_uom, shipment_result_node.get_text('BillingWeight/Weight'))
+          
+          shipment_identification_number = shipment_result_node.get_text('ShipmentIdentificationNumber')
+
+          tracking_number = shipment_result_node.get_text('PackageResults/TrackingNumber')
+          service_options_charges_pr = Charge.new(shipment_result_node.get_text('PackageResults/ServiceOptionsCharges/CurrencyCode'), shipment_result_node.get_text('PackageResults/ServiceOptionsCharges/MonetaryValue'))
+          
+          shipping_label = ShippingLabel.new(shipment_result_node.get_text('PackageResults/ShippingLabel/ImageFormat/Code'), shipment_result_node.get_text('PackageResults/ShippingLabel/GraphicImage'), shipment_result_node.get_text('PackageResults/ShippingLabel/HTMLImage'))
+
+          package_results = PackageResult.new(tracking_number, service_options_charges_pr, shipping_label)
+
+          shipment_result = ShipmentResult.new(shipment_charges, billing_weight, shipment_identification_number, package_results)
+
+        end
+
+        resp = ShippingResponse.new(success, message, Hash.from_xml(response),
+          :carrier => @@name,
+          :xml => response,
+          :request => last_request,
+          :shipment_details => shipment_result 
+        )
+        resp
+      end
       
       def parse_rate_response(origin, destination, packages, response, options={})
         rates = []
@@ -775,11 +825,11 @@ module ActiveMerchant
       end
 
       def response_success?(xml)
-        xml.get_text('/*/Response/ResponseStatusCode').to_s == '1'
+        xml.get_text('/*/Response/ResponseStatusCode | */*/*/Response/ResponseStatus/Code').to_s == '1'
       end
       
       def response_message(xml)
-        xml.get_text('/*/Response/Error/ErrorDescription | /*/Response/ResponseStatusDescription').to_s
+        xml.get_text('/*/Response/Error/ErrorDescription | /*/Response/ResponseStatusDescription | */*/*/Response/ResponseStatus/Description').to_s
       end
       
       def commit(action, request, test = false)

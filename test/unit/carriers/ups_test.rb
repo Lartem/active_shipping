@@ -197,4 +197,13 @@ class UPSTest < Test::Unit::TestCase
     
     @carrier.validate_address(@locations[:beverly_hills], {:test => true})
   end
+
+  def test_cancel_shipment
+    mock_response = xml_fixture('ups/cancel_shipment_response').gsub(/[\t\n\r]/, '')
+    @carrier.expects(:commit).returns(mock_response)
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.cancel_shipment('1ZISDE016691676846', {:test => true})
+    end
+  end
 end

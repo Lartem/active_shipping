@@ -2,11 +2,11 @@
 	<envr:Header>
 		<upss:UPSSecurity>
 			<upss:UsernameToken>
-				<upss:Username>SmaileX.com</upss:Username>
-				<upss:Password>Delivery13</upss:Password>
+				<upss:Username>user_name</upss:Username>
+				<upss:Password>password</upss:Password>
 			</upss:UsernameToken>
 			<upss:ServiceAccessToken>
-				<upss:AccessLicenseNumber>BC90F6B48ADDFB10</upss:AccessLicenseNumber>
+				<upss:AccessLicenseNumber>LicenseKey</upss:AccessLicenseNumber>
 			</upss:ServiceAccessToken>
 		</upss:UPSSecurity>
 	</envr:Header>

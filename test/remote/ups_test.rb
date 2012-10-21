@@ -227,4 +227,11 @@ class UPSTest < Test::Unit::TestCase
       response = @carrier.validate_address(@locations[:beverly_hills], {:test => true})
     end
   end
+
+  def test_cancel_shipment
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.cancel_shipment('1ZISDE016691676846', {:test => true})
+    end
+  end
 end

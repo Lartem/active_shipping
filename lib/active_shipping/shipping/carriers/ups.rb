@@ -18,7 +18,8 @@ module ActiveMerchant
         :address_validation => 'ups.app/xml/AV',
         :shipping => 'webservices/Ship', # webservices
         :address_validation_street => 'webservices/XAV',
-        :courier_dispatch => 'webservices/Pickup'
+        :courier_dispatch => 'webservices/Pickup',
+        :cancel_shipping => 'webservices/Void'
       }
       
       PICKUP_CODES = HashWithIndifferentAccess.new({
@@ -136,6 +137,9 @@ module ActiveMerchant
       UnitOfMeasurement = Struct.new(:code, :description)
       PackageResult = Struct.new(:tracking_number, :service_options_charges, :shipping_label)
       ShippingLabel = Struct.new(:image_format, :graphic_image_base64, :html_image_base64)
+      VoidShippingResponse = Struct.new(:is_success, :message, :status, :transaction_reference, :summary_result)
+      Status = Struct.new(:code, :description)
+      TransactionReference = Struct.new(:customer_context, :transaction_identifier)
       
       def requirements
         [:key, :login, :password]
@@ -200,6 +204,16 @@ module ActiveMerchant
       def check_pickup_availability()
         #TODO
       end
+
+      def cancel_shipment shipment_identification_number, options = {}
+        options = @options.update(options)
+        cancel_request = build_cancel_shipment_request(shipment_identification_number, options)
+        p cancel_request
+        response = commit(:cancel_shipping, save_request(cancel_request), (options[:test] || false))
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        resp = parse_cancel_shipment_response(response, options)
+        resp
+      end
       
       def courier_dispatch(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={})
         options = @options.update(options)
@@ -215,6 +229,29 @@ module ActiveMerchant
       end
 
       protected
+
+      def build_cancel_shipment_request shipment_identification_number, options
+        xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
+          'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:common' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:wsf' => 'http://www.ups.com/schema/wsf') do |env_node|
+          env_node << XmlNode.new('envr:Header') do |h_node|
+            h_node << build_ws_access_request
+          end
+          env_node << XmlNode.new('envr:Body') do |body_node| 
+            body_node << XmlNode.new('VoidShipmentRequest', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Void/v1.1', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |void_shipment_request_node|
+              void_shipment_request_node << XmlNode.new('Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0') do |request_node|
+                request_node << XmlNode.new('TransactionReference', options[:transaction_reference]) if options[:transaction_reference]
+              end
+              void_shipment_request_node << XmlNode.new('VoidShipment', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Void/v1.1') do |void_shipment_node|
+                void_shipment_node << XmlNode.new('ShipmentIdentificationNumber', shipment_identification_number)
+                void_shipment_node << XmlNode.new('TrackingNumber', options[:tracking_number]) if options[:tracking_number]
+              end
+            end
+          end
+        end
+        xml_request.to_s
+      end
 
       def build_address_validation_city_request(address, options={})
         xml_request = XmlNode.new('AddressValidationRequest') do |root_node|
@@ -674,6 +711,24 @@ module ActiveMerchant
         )
         resp
       end
+
+      def parse_cancel_shipment_response response, options = {}
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['Envelope']
+        success = response_success?(xml)
+        message = response_message(xml)
+        status, transaction_reference, summary_result = nil, nil, nil
+        if success
+           cancel_response_status_node = xml.elements['/Envelope/Body/VoidShipmentResponse/Response']
+           status = Status.new(cancel_response_status_node.get_text('ResponseStatus/Code'), cancel_response_status_node.get_text('ResponseStatus/Description'))
+           transaction_reference = TransactionReference.new(cancel_response_status_node.get_text('TransactionReference/CustomerContext'), cancel_response_status_node.get_text('TransactionReference/TransactionIdentifier'))
+           summary_result = Status.new(xml.get_text('/Envelope/Body/VoidShipmentResponse/SummaryResult/Status/Code'), xml.get_text('/Envelope/Body/VoidShipmentResponse/SummaryResult/Status/Description'))
+        end
+
+         resp = VoidShippingResponse.new(success, message, status, transaction_reference, summary_result)
+         resp
+      end
+
       
       def parse_rate_response(origin, destination, packages, response, options={})
         rates = []

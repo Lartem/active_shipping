@@ -1,0 +1,21 @@
+<envr:Envelope xmlns:auth='http://www.ups.com/schema/xpci/1.0/auth' xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns:envr='http://schemas.xmlsoap.org/soap/envelope/' xmlns:upss='http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0' xmlns:wsf='http://www.ups.com/schema/wsf' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+	<envr:Header>
+		<upss:UPSSecurity>
+			<upss:UsernameToken>
+				<upss:Username>login</upss:Username>
+				<upss:Password>password</upss:Password>
+			</upss:UsernameToken>
+			<upss:ServiceAccessToken>
+				<upss:AccessLicenseNumber>key</upss:AccessLicenseNumber>
+			</upss:ServiceAccessToken>
+		</upss:UPSSecurity>
+	</envr:Header>
+	<envr:Body>
+		<VoidShipmentRequest xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns='http://www.ups.com/XMLSchema/XOLTWS/Void/v1.1' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+			<Request xmlns='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'/>
+			<VoidShipment xmlns='http://www.ups.com/XMLSchema/XOLTWS/Void/v1.1'>
+				<ShipmentIdentificationNumber>1ZISDE016691676846</ShipmentIdentificationNumber>
+			</VoidShipment>
+		</VoidShipmentRequest>
+	</envr:Body>
+</envr:Envelope>

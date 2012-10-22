@@ -657,6 +657,20 @@ module ActiveMerchant
           service_type = is_saturday_delivery ? "#{service_code}_SATURDAY_DELIVERY" : service_code
           
           currency = handle_incorrect_currency_codes(rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalNetCharge/Currency').to_s)
+                    
+          surcharges =
+            rated_shipment.elements.inject('RatedShipmentDetails/ShipmentRateDetail/Surcharges', {}) do |acc, surcharge|
+              type = surcharge.get_text('SurchargeType').to_s
+              acc.merge!({
+                type => RateEstimate::Surcharge.new(
+                  type,
+                  surcharge.get_text('Description').to_s,
+                  surcharge.get_text('Amount/Currency').to_s,
+                  surcharge.get_text('Amount/Amount').to_s
+                )
+              })
+            end
+
           rate_estimates << RateEstimate.new(origin, destination, @@name,
                               self.class.service_name_for_code(service_type),
                               :service_code => service_code,
@@ -664,7 +678,9 @@ module ActiveMerchant
                               :currency => currency,
                               :packages => packages,
                               :delivery_range => [rated_shipment.get_text('DeliveryTimestamp').to_s] * 2,
-                              :dim => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s == 'DIM')
+                              :dim => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s == 'DIM',
+                              :base_charge => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalBaseCharge/Amount').to_s,
+                              :surcharges => surcharges)
 	    end
         if rate_estimates.empty?
           success = false

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version=\"1.0\"?>
 <AddressValidationResponse>
   <Response>
     <TransactionReference>
@@ -10,10 +10,10 @@
     <Rank>1</Rank>
     <Quality>1.0</Quality>
     <Address>
-      <City>BEVERLY HILLS</City>
-      <StateProvinceCode>CA</StateProvinceCode>
+      <City>HOUSTON</City>
+      <StateProvinceCode>TX</StateProvinceCode>
     </Address>
-    <PostalCodeLowEnd>90209</PostalCodeLowEnd>
-    <PostalCodeHighEnd>90213</PostalCodeHighEnd>
+    <PostalCodeLowEnd>77001</PostalCodeLowEnd>
+    <PostalCodeHighEnd>77099</PostalCodeHighEnd>
   </AddressValidationResult>
 </AddressValidationResponse>

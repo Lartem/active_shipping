@@ -1,0 +1,18 @@
+<?xml version='1.0'?>
+<AccessRequest>
+	<AccessLicenseNumber>BC90F6B48ADDFB10</AccessLicenseNumber>
+	<UserId>SmaileX.com</UserId>
+	<Password>Delivery13</Password>
+</AccessRequest>
+<?xml version='1.0'?>
+<AddressValidationRequest>
+	<Request>
+		<RequestAction>AV</RequestAction>
+	</Request>
+	<Address>
+		<City>blablaUnknown</City>
+		<StateProvinceCode>OO</StateProvinceCode>
+		<CountryCode>US</CountryCode>
+		<PostalCode>00000</PostalCode>
+	</Address>
+</AddressValidationRequest>

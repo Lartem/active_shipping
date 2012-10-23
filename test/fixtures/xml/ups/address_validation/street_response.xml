@@ -1,0 +1,33 @@
+<Envelope>
+	<Header/>
+	<Body>
+		<XAVResponse>
+			<Response>
+				<ResponseStatus>
+					<Code>1</Code>
+					<Description>Success</Description>
+				</ResponseStatus>
+			</Response>
+			<ValidAddressIndicator/>
+			<AddressClassification>
+				<Code>1</Code>
+				<Description>Commercial</Description>
+			</AddressClassification>
+			<Candidate>
+				<AddressClassification>
+					<Code>1</Code>
+					<Description>Commercial</Description>
+				</AddressClassification>
+				<AddressKeyFormat>
+					<AddressLine>11811 NORTH FWY</AddressLine>
+					<PoliticalDivision2>HOUSTON</PoliticalDivision2>
+					<PoliticalDivision1>TX</PoliticalDivision1>
+					<PostcodePrimaryLow>77060</PostcodePrimaryLow>
+					<PostcodeExtendedLow>3201</PostcodeExtendedLow>
+					<Region>HOUSTON TX 77060-3201</Region>
+					<CountryCode>US</CountryCode>
+				</AddressKeyFormat>
+			</Candidate>
+		</XAVResponse>
+	</Body>
+</Envelope>

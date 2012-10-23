@@ -1,0 +1,14 @@
+<?xml version=\"1.0\"?>
+<AddressValidationResponse>
+	<Response>
+		<TransactionReference>
+		</TransactionReference>
+		<ResponseStatusCode>0</ResponseStatusCode>
+		<ResponseStatusDescription>Failure</ResponseStatusDescription>
+		<Error>
+			<ErrorSeverity>Hard</ErrorSeverity>
+			<ErrorCode>20008</ErrorCode>
+			<ErrorDescription>The field, PostalCode, contains invalid data, 00000</ErrorDescription>
+		</Error>
+	</Response>
+</AddressValidationResponse>

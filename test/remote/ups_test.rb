@@ -222,10 +222,22 @@ class UPSTest < Test::Unit::TestCase
   end
 
   def test_address_validation
+    #Bad address
+    # response = nil
+    # assert_nothing_raised do
+    #   response = @carrier.validate_address(@locations[:bad_location], {:test => true})
+    # end
+
+    #Commercial address
     response = nil
     assert_nothing_raised do
-      response = @carrier.validate_address(@locations[:beverly_hills], {:test => true})
+      response = @carrier.validate_address(@locations[:cc_address], {:test => true})
     end
+
+    # #Residental address
+    # assert_nothing_raised do
+    #   response = @carrier.validate_address(@locations[:joel_gibson], {:test => true})
+    # end
   end
 
   def test_cancel_shipment

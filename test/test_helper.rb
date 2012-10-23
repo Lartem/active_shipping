@@ -217,7 +217,14 @@ module ActiveMerchant
                                       :postal_code => '77060',
                                       :address1 => '11811 North Freeway',
                                       :address2 => 'Suite 500',
-                                      :state => 'TX')
+                                      :state => 'TX'),
+        :bad_location => Location.new(
+                                      :country => 'US',
+                                      :city => 'blablaUnknown',
+                                      :postal_code => '000000',
+                                      :address1 => '00000 bla haha bla',
+                                      :address2 => 'apt 000',
+                                      :state => 'OO')
       }
       
     end

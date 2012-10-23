@@ -137,9 +137,18 @@ module ActiveMerchant
       UnitOfMeasurement = Struct.new(:code, :description)
       PackageResult = Struct.new(:tracking_number, :service_options_charges, :shipping_label)
       ShippingLabel = Struct.new(:image_format, :graphic_image_base64, :html_image_base64)
+      
+      #void shipping response
       VoidShippingResponse = Struct.new(:is_success, :message, :status, :transaction_reference, :summary_result)
       Status = Struct.new(:code, :description)
       TransactionReference = Struct.new(:customer_context, :transaction_identifier)
+
+      #Address validation response
+      AddressValidationResponse = Struct.new(:city_level_status, :street_level_status, :status, :message, :type, :error, :valid_address, :candidates)
+      AddressCandidate = Struct.new(:address_type, :location)
+      AddressType = Struct.new(:code, :description)
+      Error = Struct.new(:code, :severity, :description)
+
       
       def requirements
         [:key, :login, :password]
@@ -192,13 +201,21 @@ module ActiveMerchant
         response_city_validation = commit(:address_validation, save_request(req), (options[:test] || false))
         p 'Address validation response_city_validation'
         p response_city_validation
+        parsed_response = parse_address_city_validation_response(response_city_validation, options)
+        
+        
+        if parsed_response.city_level_status
+          address_street_validation_request = build_address_validation_street_request(address, options)
+          p address_street_validation_request
+          #UPS sandbox is not knowing about all states
+          response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (false))
+          p response_street_validation
+          response_street_validation = response_street_validation.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+          parsed_response = parse_address_street_validation_response(response_street_validation, parsed_response, options)
 
-        address_street_validation_request = build_address_validation_street_request(address, options)
-        p address_street_validation_request
-
-        response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (options[:test] || false))
-        p response_street_validation
-
+        end
+        p parsed_response
+        parsed_response
       end
 
       def check_pickup_availability()
@@ -729,7 +746,61 @@ module ActiveMerchant
          resp
       end
 
-      
+      def parse_address_city_validation_response response, options={}
+        xml = REXML::Document.new(response)
+        success = response_success?(xml)
+        message = response_message(xml)
+        address_validation_result = nil
+        if success
+          address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, nil, nil)
+        else
+          error_node = xml.elements['/AddressValidationResponse/Response/Error']
+          error = Error.new(error_node.get_text('ErrorCode'), error_node.get_text('ErrorSeverity'), error_node.get_text('ErrorDescription'))
+          p error
+          address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, error, nil)
+        end
+        address_validation_result
+      end
+
+      def parse_address_street_validation_response(response, parsed_city_response, options)
+        p '==============Street'
+        p response
+        xml = REXML::Document.new(response)
+        success = response_success?(xml)
+        message = response_message(xml)
+        parsed_city_response.street_level_status = success
+        parsed_city_response.valid_address = xml.elements['/Envelope/Body/XAVResponse/ValidAddressIndicator'] != nil
+        
+        if success
+          type = parse_address_type(xml.elements['/Envelope/Body/XAVResponse/AddressClassification']) if xml.elements['/Envelope/Body/XAVResponse/AddressClassification']
+          
+          parsed_city_response.type = type
+          candidates = []
+          xml.elements.each('/Envelope/Body/XAVResponse/Candidate') do |candidate_node|
+            ca_type = parse_address_type(candidate_node.elements['AddressClassification'])
+            location = Location.new(
+              :address1 => candidate_node.get_text('AddressKeyFormat/AddressLine'),
+              :city => candidate_node.get_text('AddressKeyFormat/PoliticalDivision2 '),
+              :state => candidate_node.get_text('AddressKeyFormat/PoliticalDivision1'),
+              :postal_code => candidate_node.get_text('AddressKeyFormat/PostcodePrimaryLow'),
+            )
+            address_candidate = AddressCandidate.new(ca_type, location)
+            candidates.push(address_candidate)
+          end
+        parsed_city_response.candidates = candidates  
+        end
+        parsed_city_response.status = parsed_city_response.city_level_status && parsed_city_response.street_level_status 
+        p 'parsed***********'
+        p parsed_city_response
+        parsed_city_response
+      end
+
+      def parse_address_type(node, options={})
+        p node
+        address_type = AddressType.new(node.get_text('Code'), node.get_text('Description'))   
+        address_type
+      end
+
       def parse_rate_response(origin, destination, packages, response, options={})
         rates = []
         

@@ -790,8 +790,7 @@ module ActiveMerchant
         parsed_city_response.candidates = candidates  
         end
         parsed_city_response.status = parsed_city_response.city_level_status && parsed_city_response.street_level_status 
-        p 'parsed***********'
-        p parsed_city_response
+      
         parsed_city_response
       end
 

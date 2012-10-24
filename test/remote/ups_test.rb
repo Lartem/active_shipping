@@ -182,10 +182,28 @@ class UPSTest < Test::Unit::TestCase
     assert_nothing_raised do
       begin
       #pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={}
+      # @carrier.courier_dispatch(
+      #   Location.from(@locations[:beverly_hills].to_hash, :company => 'Smailex', :name=>'Smailex'), 
+      #   Time.new(2012, 9, 20, 18), Time.new(2012, 9, 20, 10), Date.new(2012, 8, 30), 
+      #   '012', 1, 'US', '01', 2, 'LBS')
+
       @carrier.courier_dispatch(
         Location.from(@locations[:beverly_hills].to_hash, :company => 'Smailex', :name=>'Smailex'), 
-        Time.new(2012, 9, 20, 18), Time.new(2012, 9, 20, 10), Date.new(2012, 8, 30), 
-        '012', 1, 'US', '01', 2, 'LBS')
+        Time.new(2012, 10, 26, 18), Time.new(2012, 10, 26, 10), Date.new(2012, 10, 26), 
+        '012', 1, 'US', '01', 2, 'LBS', 'Y', {:test=>true})
+    rescue Exception=>e
+      puts
+      puts e
+      puts e.backtrace
+    end
+    end
+  end
+
+  def test_courier_dispatch_cancel
+    assert_nothing_raised do
+      begin
+      prn = '292A81QPBI4'
+      @carrier.courier_dispatch_cancel(prn, {:test => true})
     rescue Exception=>e
       puts
       puts e

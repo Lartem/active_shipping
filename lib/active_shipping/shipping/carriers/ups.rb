@@ -234,7 +234,7 @@ module ActiveMerchant
       
       def courier_dispatch(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={})
         options = @options.update(options)
-        access_request = build_ws_access_request
+        p options
         courier_dispatch_request = build_courier_dispatch_request(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
         puts 'Courier dispatch request'
         p courier_dispatch_request
@@ -242,9 +242,18 @@ module ActiveMerchant
         puts 'response!'
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         p response
-        res = parse_courier_dispatch_response(response, options)
-        puts res
-        res
+        parse_courier_dispatch_response(response, options)
+      end
+
+      def courier_dispatch_cancel(prn, options={})
+        options = @options.update(options)
+        courier_dispatch_cancel_request = build_courier_dispatch_cancel_request(prn, options)
+        puts 'Courier dispatch Cancel request'
+        p courier_dispatch_cancel_request
+        response = commit(:courier_dispatch, save_request(courier_dispatch_cancel_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        p response
+        parse_courier_dispatch_cancel_response(response, options)
       end
 
       protected
@@ -330,6 +339,25 @@ module ActiveMerchant
           end
           env_node << XmlNode.new('envr:Body') do |body_node| 
             body_node << build_courier_dispatch_request_old(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
+          end
+        end
+        xml_request.to_s
+      end
+
+      def build_courier_dispatch_cancel_request prn, options = {}
+        xml_request = XmlNode.new('envr:Envelope', 'xmlns:auth' => 'http://www.ups.com/schema/xpci/1.0/auth', 
+          'xmlns:upss' => 'http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0', 'xmlns:envr' => 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:common' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:wsf' => 'http://www.ups.com/schema/wsf') do |env_node|
+          env_node << XmlNode.new('envr:Header') do |h_node|
+            h_node << build_ws_access_request
+          end
+          env_node << XmlNode.new('envr:Body') do |body_node| 
+            body_node << XmlNode.new('PickupCancelRequest', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |pickup_cancel_request_node|
+              pickup_cancel_request_node << XmlNode.new('common:Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0')
+              pickup_cancel_request_node << XmlNode.new('CancelBy', '02', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'})
+              pickup_cancel_request_node << XmlNode.new('PRN', prn)
+            end
           end
         end
         xml_request.to_s
@@ -751,6 +779,14 @@ module ActiveMerchant
         end
         p params
         Response.new(success, message, params)
+      end
+
+      def parse_courier_dispatch_cancel_response(response, options)
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['/Envelope/Body/PickupCancelResponse']
+        success = response_success?(xml)
+        message = response_message(xml)
+        Response.new(success, message)
       end
 
       def parse_cancel_shipment_response response, options = {}

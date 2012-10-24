@@ -1,0 +1,20 @@
+<envr:Envelope xmlns:auth='http://www.ups.com/schema/xpci/1.0/auth' xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns:envr='http://schemas.xmlsoap.org/soap/envelope/' xmlns:upss='http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0' xmlns:wsf='http://www.ups.com/schema/wsf' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+	<envr:Header>
+		<upss:UPSSecurity>
+			<upss:UsernameToken>
+				<upss:Username>user name</upss:Username>
+				<upss:Password>password</upss:Password>
+			</upss:UsernameToken>
+			<upss:ServiceAccessToken>
+				<upss:AccessLicenseNumber>License Number</upss:AccessLicenseNumber>
+			</upss:ServiceAccessToken>
+		</upss:UPSSecurity>
+	</envr:Header>
+	<envr:Body>
+		<PickupCancelRequest xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+			<common:Request xmlns='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'/>
+			<CancelBy xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>02</CancelBy>
+			<PRN>2929602E9CP</PRN>
+		</PickupCancelRequest>
+	</envr:Body>
+</envr:Envelope>

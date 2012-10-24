@@ -1,0 +1,14 @@
+<Envelope>
+	<Header/>
+	<Body>
+		<PickupCancelResponse>
+			<Response>
+				<ResponseStatus>
+					<Code>1</Code>
+					<Description>Success</Description>
+				</ResponseStatus>
+			</Response>
+			<PickupType>01</PickupType>
+		</PickupCancelResponse>
+	</Body>
+</Envelope>

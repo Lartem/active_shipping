@@ -678,7 +678,7 @@ module ActiveMerchant
                               :currency => currency,
                               :packages => packages,
                               :delivery_range => [rated_shipment.get_text('DeliveryTimestamp').to_s] * 2,
-                              :dim => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/RatedWeightMethod').to_s == 'DIM',
+                              :dim => rated_shipment.get_text('RatedShipmentDetails/RatedPackages/PackageRateDetail/RatedWeightMethod').to_s == 'DIM',
                               :base_charge => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalBaseCharge/Amount').to_s,
                               :surcharges => surcharges)
 	    end

@@ -1,0 +1,56 @@
+<envr:Envelope xmlns:auth='http://www.ups.com/schema/xpci/1.0/auth' xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns:envr='http://schemas.xmlsoap.org/soap/envelope/' xmlns:upss='http://www.ups.com/XMLSchema/XOLTWS/UPSS/v1.0' xmlns:wsf='http://www.ups.com/schema/wsf' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+	<envr:Header>
+		<upss:UPSSecurity>
+			<upss:UsernameToken>
+				<upss:Username>User_name</upss:Username>
+				<upss:Password>password</upss:Password>
+			</upss:UsernameToken>
+			<upss:ServiceAccessToken>
+				<upss:AccessLicenseNumber>lic_num</upss:AccessLicenseNumber>
+			</upss:ServiceAccessToken>
+		</upss:UPSSecurity>
+	</envr:Header>
+	<envr:Body>
+		<PickupCreationRequest xmlns:common='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0' xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'>
+			<common:Request xmlns='http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'/>
+			<RatePickupIndicator>Y</RatePickupIndicator>
+			<Shipper xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>
+				<Account>
+					<AccountNumber>ACC_NUM</AccountNumber>
+					<AccountCountryCode>US</AccountCountryCode>
+				</Account>
+			</Shipper>
+			<PickupDateInfo xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>
+				<CloseTime>1800</CloseTime>
+				<ReadyTime>1000</ReadyTime>
+				<PickupDate>20120830</PickupDate>
+			</PickupDateInfo>
+			<PickupAddress xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>
+				<CompanyName>Smailex</CompanyName>
+				<ContactName>Smailex</ContactName>
+				<AddressLine>455 N. Rexford Dr.</AddressLine>
+				<City>Beverly Hills</City>
+				<StateProvince>CA</StateProvince>
+				<PostalCode>90210</PostalCode>
+				<CountryCode>US</CountryCode>
+				<ResidentialIndicator>Y</ResidentialIndicator>
+				<Phone>
+					<Number>1-310-285-1013</Number>
+				</Phone>
+			</PickupAddress>
+			<AlternateAddressIndicator>Y</AlternateAddressIndicator>
+			<PickupPiece xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>
+				<ServiceCode>012</ServiceCode>
+				<Quantity>1</Quantity>
+				<DestinationCountryCode>US</DestinationCountryCode>
+				<ContainerCode>01</ContainerCode>
+			</PickupPiece>
+			<TotalWeight xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>
+				<Weight>2</Weight>
+				<UnitOfMeasurement>LBS</UnitOfMeasurement>
+			</TotalWeight>
+			<OverweightIndicator xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>N</OverweightIndicator>
+			<PaymentMethod xmlns='http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1'>01</PaymentMethod>
+		</PickupCreationRequest>
+	</envr:Body>
+</envr:Envelope>

@@ -240,9 +240,11 @@ module ActiveMerchant
         p courier_dispatch_request
         response = commit(:courier_dispatch, save_request(courier_dispatch_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         puts 'response!'
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         p response
-        puts
-        parse_courier_dispatch_response(response, options)
+        res = parse_courier_dispatch_response(response, options)
+        puts res
+        res
       end
 
       protected
@@ -441,7 +443,7 @@ module ActiveMerchant
         xml_request = XmlNode.new('PickupCreationRequest', {'xmlns'=>'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1', 'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema', 'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance', 'xmlns:common'=>'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0'}) do |root_node|
           root_node << XmlNode.new('common:Request', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Common/v1.0')
 
-          root_node << XmlNode.new('RatePickupIndicator', 'N')
+          root_node << XmlNode.new('RatePickupIndicator', 'Y')
 
           root_node << XmlNode.new('Shipper', 'xmlns' => 'http://www.ups.com/XMLSchema/XOLTWS/Pickup/v1.1') do |shipper_node|
             shipper_node << XmlNode.new('Account') do |account_node|
@@ -727,6 +729,28 @@ module ActiveMerchant
           :shipment_details => shipment_result 
         )
         resp
+      end
+
+      def parse_courier_dispatch_response(response, options)
+        xml = REXML::Document.new(response)
+        root_node = xml.elements['/Envelope/Body/PickupCreationResponse']
+        success = response_success?(xml)
+        message = response_message(xml)
+        if success
+          prn = root_node.get_text('PRN').to_s
+          params = {:dispatch_confirmation_number => prn}
+          rate_status_node = root_node.elements['RateStatus']
+          if rate_status_node && rate_status_node.get_text('Code') == '01'
+            grand_of_all_charge = root_node.get_text('RateResult/GrandTotalOfAllCharge').to_s.to_f
+            currency = root_node.get_text('RateResult/CurrencyCode').to_s
+            charge = Charge.new(currency, grand_of_all_charge)
+            params[:total_charge] = charge
+          end
+        else
+          params = {:code => response_status_node(xml).get_text('Code'), :message => message}
+        end
+        p params
+        Response.new(success, message, params)
       end
 
       def parse_cancel_shipment_response response, options = {}

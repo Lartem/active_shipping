@@ -1,8 +1,8 @@
 <?xml version='1.0'?>
 <AccessRequest>
-	<AccessLicenseNumber>BC90F6B48ADDFB10</AccessLicenseNumber>
-	<UserId>SmaileX.com</UserId>
-	<Password>Delivery13</Password>
+	<AccessLicenseNumber>LN</AccessLicenseNumber>
+	<UserId>UId</UserId>
+	<Password>Pass</Password>
 </AccessRequest>
 <?xml version='1.0'?>
 <AddressValidationRequest>

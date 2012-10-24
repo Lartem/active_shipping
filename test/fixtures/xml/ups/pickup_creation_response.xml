@@ -1,0 +1,41 @@
+<Envelope>
+	<Header/>
+	<Body>
+		<PickupCreationResponse>
+			<Response>
+				<ResponseStatus>
+					<Code>1</Code>
+					<Description>Success</Description>
+				</ResponseStatus>
+			</Response>
+			<PRN>2929602E9CP</PRN>
+			<RateStatus>
+				<Code>01</Code>
+				<Description>Rate available</Description>
+			</RateStatus>
+			<RateResult>
+				<RateType>FD</RateType>
+				<CurrencyCode>USD</CurrencyCode>
+				<ChargeDetail>
+					<ChargeCode>B</ChargeCode>
+					<ChargeDescription>BASE CHARGE</ChargeDescription>
+					<ChargeAmount>5.00</ChargeAmount>
+					<TaxAmount>0.00</TaxAmount>
+				</ChargeDetail>
+				<ChargeDetail>
+					<ChargeCode>S</ChargeCode>
+					<ChargeDescription>REMOTE AREA SURCHARGE</ChargeDescription>
+					<ChargeAmount>0.00</ChargeAmount>
+					<TaxAmount>0.00</TaxAmount>
+				</ChargeDetail>
+				<ChargeDetail>
+					<ChargeCode>S</ChargeCode>
+					<ChargeDescription>FUEL SURCHARGE</ChargeDescription>
+					<ChargeAmount>0.40</ChargeAmount>
+					<TaxAmount>0.00</TaxAmount>
+				</ChargeDetail>
+				<GrandTotalOfAllCharge>5.40</GrandTotalOfAllCharge>
+			</RateResult>
+		</PickupCreationResponse>
+	</Body>
+</Envelope>

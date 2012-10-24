@@ -181,6 +181,7 @@ class UPSTest < Test::Unit::TestCase
   def test_courier_dispatch
     assert_nothing_raised do
       begin
+      #pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={}
       @carrier.courier_dispatch(
         Location.from(@locations[:beverly_hills].to_hash, :company => 'Smailex', :name=>'Smailex'), 
         Time.new(2012, 9, 20, 18), Time.new(2012, 9, 20, 10), Date.new(2012, 8, 30), 
@@ -223,10 +224,10 @@ class UPSTest < Test::Unit::TestCase
 
   def test_address_validation
     #Bad address
-    # response = nil
-    # assert_nothing_raised do
-    #   response = @carrier.validate_address(@locations[:bad_location], {:test => true})
-    # end
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.validate_address(@locations[:bad_location], {:test => true})
+    end
 
     #Commercial address
     response = nil
@@ -235,9 +236,9 @@ class UPSTest < Test::Unit::TestCase
     end
 
     # #Residental address
-    # assert_nothing_raised do
-    #   response = @carrier.validate_address(@locations[:joel_gibson], {:test => true})
-    # end
+    assert_nothing_raised do
+      response = @carrier.validate_address(@locations[:joel_gibson], {:test => true})
+    end
   end
 
   def test_cancel_shipment
@@ -246,4 +247,6 @@ class UPSTest < Test::Unit::TestCase
       response = @carrier.cancel_shipment('1ZISDE016691676846', {:test => true})
     end
   end
+
+  
 end

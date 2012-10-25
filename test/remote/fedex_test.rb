@@ -217,7 +217,7 @@ class FedExTest < Test::Unit::TestCase
       response = @carrier.request_shipping(Time.parse("14:00", (Time.now + 48*60*60)), 'REQUEST_COURIER', 'FEDEX_2_DAY', 'FEDEX_ENVELOPE', 
         {:person_name=>'Nikita Mershmall', :company_name=>'Drup inc', :phone_number=>'2513851321'}, @locations[:beverly_hills], 
         {:person_name=>'Shiro Nakamuro', :company_name=>'Drop inc', :phone_number=>'1513851300'}, @locations[:new_york], 'US', 
-        [{:weight_units=>'LB', :weight_value=>'0.5', :item_description=>'Letter', :customer_reference_value=>'SM-US-000000102'}], :test=>true)
+        [{:weight_units=>'LB', :weight_value=>'0.5', :item_description=>'Letter', :customer_reference_value=>'SM-US-000000102', :signature_option=>'ADULT'}], :test=>true)
     end
   end
 end

@@ -376,8 +376,18 @@ module ActiveMerchant
                   cr_node << XmlNode.new('CustomerReferenceType', rpli[:customer_reference_type] || CUSTOMER_REFERENCE_TYPES[:customer_reference])
                   cr_node << XmlNode.new('Value', rpli[:customer_reference_value])
                 end
+                if rpli[:signature_option]
+                  rpli_node << XmlNode.new('SpecialServicesRequested') do |spec_serv_req_node|  
+                    spec_serv_req_node << XmlNode.new('SpecialServiceTypes', 'SIGNATURE_OPTION')
+                    spec_serv_req_node << XmlNode.new('SignatureOptionDetail') do |sign_opt_detail_node|
+                      sign_opt_detail_node << XmlNode.new('OptionType', rpli[:signature_option])
+                    end
+                  end
+                end
               end
             end
+
+
           end
         end
         xml_request.to_s

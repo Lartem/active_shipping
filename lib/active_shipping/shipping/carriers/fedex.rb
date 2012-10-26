@@ -157,7 +157,7 @@ module ActiveMerchant
       Label = Struct.new(:type, :shipping_document_disposition, :resolution, :copies_to_print, :parts)
       LabelPart = Struct.new(:sequence_number, :image_base64)
 
-      LOGGER_NAMES = [:address_validation, :rates, :tracking, :pickup_availability, :courier_dispatch, :request_shipping, :cancel_pickup, :cancel_shipping]
+      LOGGER_NAMES = [:address_validation, :rates, :tracking, :pickup_availability, :courier_dispatch, :request_shipping, :cancel_pickup, :cancel_shipping, :search_location]
 
       def initialize(options={})
         @loggers = create_loggers(options[:log_dir]) if options[:log_dir] != nil
@@ -260,6 +260,15 @@ module ActiveMerchant
         parse_cancel_pickup_response(response, options)        
       end
 
+      def search_location location, options = {}
+        options = @options.update(options)
+        search_request = build_search_request(location, options)
+        log(:search_location, search_request)
+        response = commit(save_request(search_request), (options[:test] || false))
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parse_search_location_response(response, options)
+      end
+
       protected
 
       def build_cancel_shipment_request tracking_number, ship_timestamp, form_id, tracking_id_type, options
@@ -278,6 +287,17 @@ module ActiveMerchant
           root_node << XmlNode.new('DeletionControl', 'DELETE_ALL_PACKAGES')
         end
         xml_request.to_s
+      end
+
+      def build_search_location_request location, options = {}
+         xml_request = XmlNode.new('ProcessShipmentRequest',
+          'xmlns:xsd' => 'http://www.w3.org/2001/XMLSchema',
+          'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
+          'xmlns' => 'http://fedex.com/ws/gsai/v10') do |root_node|
+          root_node << build_request_header
+          root_node << build_version_node('gsai', 1, 0, 0, 'xmlns' => 'http://fedex.com/ws/gsai/v1')
+
+         end
       end
 
       def build_cancel_pickup_request pickup_confirmation_number, carrier_code, scheduled_date, location, transaction_id, currency, amount, options

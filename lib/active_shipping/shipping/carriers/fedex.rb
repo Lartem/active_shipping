@@ -1007,7 +1007,7 @@ module ActiveMerchant
 
       def log request_type, message
         @loggers[request_type].info(message) if @loggers[request_type] != nil
-      end      
+      end
     end
   end
 end

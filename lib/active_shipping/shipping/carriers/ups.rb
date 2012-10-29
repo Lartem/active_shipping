@@ -149,7 +149,14 @@ module ActiveMerchant
       AddressType = Struct.new(:code, :description)
       Error = Struct.new(:code, :severity, :description)
 
-      
+      LOGGER_NAMES = [:address_validation, :rates, :tracking, :pickup_availability, :courier_dispatch, :request_shipping, :cancel_pickup, :cancel_shipping, :search_location]
+
+      def initialize(options={})
+        @loggers = create_loggers(options[:log_dir]) if options[:log_dir] != nil
+        @loggers ||= {}
+        super(options)
+      end
+
       def requirements
         [:key, :login, :password]
       end
@@ -1026,14 +1033,25 @@ module ActiveMerchant
         origin = origin.country_code(:alpha2)
         
         name = case origin
-        when "CA" then CANADA_ORIGIN_SERVICES[code]
-        when "MX" then MEXICO_ORIGIN_SERVICES[code]
-        when *EU_COUNTRY_CODES then EU_ORIGIN_SERVICES[code]
+          when "CA" then CANADA_ORIGIN_SERVICES[code]
+          when "MX" then MEXICO_ORIGIN_SERVICES[code]
+          when *EU_COUNTRY_CODES then EU_ORIGIN_SERVICES[code]
         end
         
         name ||= OTHER_NON_US_ORIGIN_SERVICES[code] unless name == 'US'
         name ||= DEFAULT_SERVICES[code]
-      end      
+      end
+
+      def create_loggers log_dir
+        Dir.mkdir log_dir rescue nil
+        LOGGER_NAMES.inject({}) { |acc, l_sym|
+          acc.merge!({l_sym => Lumberjack::Logger.new(log_dir + '/' + l_sym.to_s)})
+        }
+      end
+
+      def log request_type, message
+        @loggers[request_type].info(message) if @loggers[request_type] != nil
+      end
     end
   end
 end

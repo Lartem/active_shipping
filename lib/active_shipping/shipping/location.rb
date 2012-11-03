@@ -1,7 +1,7 @@
 module ActiveMerchant #:nodoc:
   module Shipping #:nodoc:
     class Location
-      ADDRESS_TYPES = %w{residential commercial business po_box insufficient_data}
+      ADDRESS_TYPES = %w{residential commercial business po_box insufficient_data undetermined}
       
       attr_reader :options,
                   :country,

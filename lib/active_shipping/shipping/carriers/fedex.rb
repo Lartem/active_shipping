@@ -877,7 +877,8 @@ module ActiveMerchant
         xml = REXML::Document.new(response)
         root_node = xml.elements['CourierDispatchReply']
         success = response_success?(xml)
-        message = response_message(xml)        
+        message = response_message(xml)
+        Response.new(success, message)        
       end
 
       def parse_shipping_response(response, options)

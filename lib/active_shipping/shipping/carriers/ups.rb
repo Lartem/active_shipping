@@ -901,12 +901,13 @@ module ActiveMerchant
               )
               surcharges.merge!({name => surcharge})
             end
-
+            service_name = service_name_for(origin, service_code)
+            
             rate_estimates << RateEstimate.new(origin, destination, @@name,
-                                service_name_for(origin, service_code),
+                                service_name,
                                 :total_price => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s.to_f,
                                 :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
-                                :service_code => service_code,
+                                :service_code => service_name.upcase.gsub(/ /, '_'),
                                 :packages => packages,
                                 :delivery_range => [timestamp_from_business_day(days_to_delivery)],
                                 :surcharges => surcharges)

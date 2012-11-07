@@ -111,16 +111,17 @@ module ActiveMerchant
       })
 
       PACKAGING_TYPES = {
+        '00' => 'Unknown',
         '01' => 'UPS Letter', 
-        '02' => 'Customer Supplied Package',
+        '02' => 'Package',
         '03' => 'Tube', 
-        '04' => 'PAK',
-        '21' => 'UPS Express Box',
-        '24' => 'UPS 25KG Box',
-        '25' => 'UPS 10KG Box', 
+        '04' => 'Pak',
+        '21' => 'Express Box',
+        '24' => '25KG Box',
+        '25' => '10KG Box', 
         '30' => 'Pallet',
         '2a' => 'Small Express Box', 
-        '2b' => 'Medium Express Box',
+        '22b' => 'Medium Express Box',
         '2c' => 'Large Express Box'
       }
 
@@ -167,7 +168,10 @@ module ActiveMerchant
         packages = Array(packages)
         access_request = build_access_request
         rate_request = build_rate_request(origin, destination, packages, options)
+        p rate_request
         response = commit(:rates, save_request(access_request + rate_request), (options[:test] || false))
+         p 'Rates response'
+         p response
         parse_rate_response(origin, destination, packages, response, options)
       end
       
@@ -571,16 +575,16 @@ module ActiveMerchant
             # request << XmlNode.new('RequestOption', ((options[:service].nil? or options[:service] == :all) ? 'Shop' : 'Rate'))
           end
           
-          pickup_type = options[:pickup_type] || :daily_pickup
+          # pickup_type = options[:pickup_type] || :on_call_air
           
-          root_node << XmlNode.new('PickupType') do |pickup_type_node|
-            pickup_type_node << XmlNode.new('Code', PICKUP_CODES[pickup_type])
-            # not implemented: PickupType/PickupDetails element
-          end
-          cc = options[:customer_classification] || DEFAULT_CUSTOMER_CLASSIFICATIONS[pickup_type]
-          root_node << XmlNode.new('CustomerClassification') do |cc_node|
-            cc_node << XmlNode.new('Code', CUSTOMER_CLASSIFICATIONS[cc])
-          end
+          # root_node << XmlNode.new('PickupType') do |pickup_type_node|
+          #   pickup_type_node << XmlNode.new('Code', PICKUP_CODES[pickup_type]) 
+          #   # not implemented: PickupType/PickupDetails element
+          # end
+          # cc = options[:customer_classification] || DEFAULT_CUSTOMER_CLASSIFICATIONS[pickup_type]
+          # root_node << XmlNode.new('CustomerClassification') do |cc_node|
+          #   cc_node << XmlNode.new('Code', CUSTOMER_CLASSIFICATIONS[cc])
+          # end
           
           root_node << XmlNode.new('Shipment') do |shipment|
             # not implemented: Shipment/Description element
@@ -600,27 +604,35 @@ module ActiveMerchant
             #                   * Shipment/DocumentsOnly element                      
             
             packages.each do |package|
-              imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
-              
+              # imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+              imperial = package.options[:units] == :imperial
               shipment << XmlNode.new("Package") do |package_node|
                 
-                # not implemented:  * Shipment/Package/PackagingType element
-                #                   * Shipment/Package/Description element
+                # not implemented: * Shipment/Package/Description element
                 
+                pack_type = if !!options[:packaging_type] 
+                  options[:packaging_type].to_s.casecmp('Envelope') == 0 ? 'UPS Letter' : 'Package'
+                else 
+                   'Package'
+                end
+
+                pack_code = PACKAGING_TYPES.invert[pack_type]
                 package_node << XmlNode.new("PackagingType") do |packaging_type|
-                  packaging_type << XmlNode.new("Code", '02')
+                  packaging_type << XmlNode.new("Code", pack_code)
                 end
                 
-                package_node << XmlNode.new("Dimensions") do |dimensions|
-                  dimensions << XmlNode.new("UnitOfMeasurement") do |units|
-                    units << XmlNode.new("Code", imperial ? 'IN' : 'CM')
-                  end
-                  [:length,:width,:height].each do |axis|
-                    value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
-                    dimensions << XmlNode.new(axis.to_s.capitalize, [value,0.1].max)
+                if pack_code != '01' #Add dimensions only for package, not for Letter/Envelope
+                  package_node << XmlNode.new("Dimensions") do |dimensions|
+                    dimensions << XmlNode.new("UnitOfMeasurement") do |units|
+                      units << XmlNode.new("Code", imperial ? 'IN' : 'CM')
+                    end
+                    [:length,:width,:height].each do |axis|
+                      value = ((imperial ? package.inches(axis) : package.cm(axis)).to_f*1000).round/1000.0 # 3 decimals
+                      dimensions << XmlNode.new(axis.to_s.capitalize, [value,0.1].max)
+                    end
                   end
                 end
-              
+
                 package_node << XmlNode.new("PackageWeight") do |package_weight|
                   package_weight << XmlNode.new("UnitOfMeasurement") do |units|
                     units << XmlNode.new("Code", imperial ? 'LBS' : 'KGS')
@@ -858,7 +870,6 @@ module ActiveMerchant
       end
 
       def parse_address_type(node, options={})
-        p node
         address_type = AddressType.new(node.get_text('Code'), node.get_text('Description'))   
         address_type
       end
@@ -877,6 +888,18 @@ module ActiveMerchant
             service_code = rated_shipment.get_text('Service/Code').to_s
             days_to_delivery = rated_shipment.get_text('GuaranteedDaysToDelivery').to_s.to_i
             days_to_delivery = nil if days_to_delivery == 0
+            
+            surcharges = {}
+            
+            ['TransportationCharges', 'ServiceOptionsCharges', 'TotalCharges'].each do |name| 
+              surcharge =  RateEstimate::Surcharge.new(
+                name,
+                name,
+                rated_shipment.get_text("#{name}/CurrencyCode").to_s,
+                rated_shipment.get_text("#{name}/MonetaryValue").to_s,
+              )
+              surcharges.merge!({name => surcharge})
+            end
 
             rate_estimates << RateEstimate.new(origin, destination, @@name,
                                 service_name_for(origin, service_code),
@@ -884,7 +907,8 @@ module ActiveMerchant
                                 :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
                                 :service_code => service_code,
                                 :packages => packages,
-                                :delivery_range => [timestamp_from_business_day(days_to_delivery)])
+                                :delivery_range => [timestamp_from_business_day(days_to_delivery)],
+                                :surcharges => surcharges)
           end
         end
         RateResponse.new(success, message, Hash.from_xml(response).values.first, :rates => rate_estimates, :xml => response, :request => last_request)

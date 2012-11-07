@@ -37,6 +37,30 @@ class UPSTest < Test::Unit::TestCase
                  )
     end
   end
+
+  def test_package_rates
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.find_rates(
+                   @locations[:joel_gibson],
+                   @locations[:anton_kartashov],
+                   Package.new(25*16, [31,31,31], {:units => :imperial}),
+                   {:test => true, :packaging_type => 'Package'}
+                 )
+    end
+  end
+
+  def test_envelope_rates
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.find_rates(
+                   @locations[:joel_gibson],
+                   @locations[:anton_kartashov],
+                   Package.new(0.1, [3,3,1], {:units => :imperial}),
+                   {:test => true, :packaging_type => 'Envelope'}
+                 )
+    end
+  end
   
   def test_puerto_rico
     response = nil

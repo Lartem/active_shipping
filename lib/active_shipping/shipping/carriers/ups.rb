@@ -604,8 +604,9 @@ module ActiveMerchant
             #                   * Shipment/DocumentsOnly element                      
             
             packages.each do |package|
-              # imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
-              imperial = package.options[:units] == :imperial
+              #Metric system detection depends on country for UPS
+              imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+              #imperial = package.options[:units] == :imperial
               shipment << XmlNode.new("Package") do |package_node|
                 
                 # not implemented: * Shipment/Package/Description element

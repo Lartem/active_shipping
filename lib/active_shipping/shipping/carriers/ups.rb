@@ -906,9 +906,14 @@ module ActiveMerchant
                                 :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
                                 :service_code => service_name.upcase.gsub(/ /, '_'),
                                 :packages => packages,
+                                :base_charge => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s,
                                 :delivery_range => [timestamp_from_business_day(days_to_delivery)],
                                 :surcharges => surcharges)
           end
+        end
+        if rate_estimates.empty?
+          success = false
+          message = "No shipping rates could be found for the destination address" if message.blank?
         end
         RateResponse.new(success, message, Hash.from_xml(response).values.first, :rates => rate_estimates, :xml => response, :request => last_request)
       end

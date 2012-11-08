@@ -724,7 +724,7 @@ module ActiveMerchant
             address << XmlNode.new("AddressLine2", location.address2) unless location.address2.blank?
             address << XmlNode.new("AddressLine3", location.address3) unless location.address3.blank?
             address << XmlNode.new("City", location.city) unless location.city.blank?
-            address << XmlNode.new("StateProvinceCode", location.province) unless location.province.blank? && location.province.length != 2
+            address << XmlNode.new("StateProvinceCode", location.province) if (!location.province.blank? && location.province.length == 2)
               # StateProvinceCode required for negotiated rates but not otherwise, for some reason
             address << XmlNode.new("PostalCode", location.postal_code) unless location.postal_code.blank?
             address << XmlNode.new("CountryCode", location.country_code(:alpha2)) unless location.country_code(:alpha2).blank?

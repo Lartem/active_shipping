@@ -47,8 +47,16 @@ class UPSTest < Test::Unit::TestCase
                    Package.new(25*16, [31,31,31], {:units => :imperial}),
                    {:test => true, :packaging_type => 'Package'}
                  )
+
+      response = @carrier.find_rates(
+                   @locations[:joel_gibson],
+                   @locations[:anton_kartashov],
+                   Package.new(25*16, [10,5,5], {:units => :imperial}),
+                   {:test => true, :packaging_type => 'Package'}
+                 )
     end
   end
+
 
   def test_envelope_rates
     response = nil

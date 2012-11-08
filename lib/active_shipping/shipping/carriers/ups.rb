@@ -836,8 +836,6 @@ module ActiveMerchant
       end
 
       def parse_address_street_validation_response(response, parsed_city_response, options)
-        p '==============Street'
-        p response
         xml = REXML::Document.new(response)
         success = response_success?(xml)
         message = response_message(xml)
@@ -874,7 +872,8 @@ module ActiveMerchant
 
       def parse_rate_response(origin, destination, packages, response, options={})
         rates = []
-        
+        imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
+        package_weight = imperial ? packages[0].pounds : packages[0].kgs
         xml = REXML::Document.new(response)
         success = response_success?(xml)
         message = response_message(xml)
@@ -900,12 +899,15 @@ module ActiveMerchant
             end
             service_name = service_name_for(origin, service_code)
             
+            billing_weight = rated_shipment.get_text('BillingWeight/Weight').to_s.to_f
+            
             rate_estimates << RateEstimate.new(origin, destination, @@name,
                                 service_name,
                                 :total_price => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s.to_f,
                                 :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
                                 :service_code => service_name.upcase.gsub(/ /, '_'),
                                 :packages => packages,
+                                :dim => billing_weight.to_i != package_weight.to_i,
                                 :base_charge => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s,
                                 :delivery_range => [timestamp_from_business_day(days_to_delivery)],
                                 :surcharges => surcharges)

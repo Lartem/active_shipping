@@ -168,10 +168,7 @@ module ActiveMerchant
         packages = Array(packages)
         access_request = build_access_request
         rate_request = build_rate_request(origin, destination, packages, options)
-        p rate_request
         response = commit(:rates, save_request(access_request + rate_request), (options[:test] || false))
-         p 'Rates response'
-         p response
         parse_rate_response(origin, destination, packages, response, options)
       end
       

@@ -586,6 +586,11 @@ module ActiveMerchant
           
           root_node << XmlNode.new('Shipment') do |shipment|
             # not implemented: Shipment/Description element
+            if options[:saturday_delivery]
+              shipment << XmlNode.new('ShipmentServiceOptions') do |shipment_service_options_node|
+                shipment_service_options_node << XmlNode.new('SaturdayDelivery')
+              end
+            end
             shipment << build_location_node('Shipper', (options[:shipper] || origin), options)
             shipment << build_location_node('ShipTo', destination, options)
             if options[:shipper] and options[:shipper] != origin

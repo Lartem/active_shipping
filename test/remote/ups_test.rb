@@ -57,6 +57,22 @@ class UPSTest < Test::Unit::TestCase
     end
   end
 
+  def test_package_rates_only_zip
+    response = nil
+    assert_nothing_raised do
+      response = @carrier.find_rates(
+                   Location.new({:postal_code => '94040', :country => 'US'}),
+                   Location.new({:postal_code => '77060', :country => 'US'}),
+                   Package.new(15*16, [5,10,12], {:units => :imperial}),
+                   {:test => false, :packaging_type => 'Package',
+                    :origin_account => '426F0W',
+                    :saturday_delivery => true,
+                    :service_code => '01'
+                  }
+                 )
+    end
+  end
+
 
   def test_envelope_rates
     response = nil

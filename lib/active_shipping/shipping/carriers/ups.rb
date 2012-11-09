@@ -566,9 +566,14 @@ module ActiveMerchant
       def build_rate_request(origin, destination, packages, options={})
         packages = Array(packages)
         xml_request = XmlNode.new('RatingServiceSelectionRequest') do |root_node|
+          # root_node << XmlNode.new('PickupType') do |pickup_type_node|
+          #   pickup_type_node << XmlNode.new('Code', '07')
+          # end
+
           root_node << XmlNode.new('Request') do |request|
             request << XmlNode.new('RequestAction', 'Rate')
             request << XmlNode.new('RequestOption', 'Shop')
+
             # not implemented: 'Rate' RequestOption to specify a single service query
             # request << XmlNode.new('RequestOption', ((options[:service].nil? or options[:service] == :all) ? 'Shop' : 'Rate'))
           end
@@ -586,11 +591,25 @@ module ActiveMerchant
           
           root_node << XmlNode.new('Shipment') do |shipment|
             # not implemented: Shipment/Description element
-            if options[:saturday_delivery]
-              shipment << XmlNode.new('ShipmentServiceOptions') do |shipment_service_options_node|
-                shipment_service_options_node << XmlNode.new('SaturdayDelivery')
+            shipment << XmlNode.new('ShipmentServiceOptions') do |shipment_service_options_node|
+              if options[:saturday_delivery]
+                  shipment_service_options_node << XmlNode.new('SaturdayDelivery')
+              end
+              if options[:pickup_day]
+                  shipment_service_options_node << XmlNode.new('OnCallAir') do |on_call_air_node|
+                    on_call_air_node << XmlNode.new('Schedule') do |schedule_node|
+                      schedule_node << XmlNode.new('PickupDay', options[:pickup_day])
+                    end
+                  end
               end
             end
+            
+            if (options[:service_code]) 
+              shipment << XmlNode.new('Service') do |service_node|
+                service_node << XmlNode.new('Code', options[:service_code])
+              end
+            end
+            
             shipment << build_location_node('Shipper', (options[:shipper] || origin), options)
             shipment << build_location_node('ShipTo', destination, options)
             if options[:shipper] and options[:shipper] != origin

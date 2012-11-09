@@ -924,6 +924,7 @@ module ActiveMerchant
               surcharges.merge!({name => surcharge})
             end
             service_name = service_name_for(origin, service_code)
+            service_name = "#{service_name} Saturday Delivery" if options[:saturday_delivery]
             
             billing_weight = rated_shipment.get_text('BillingWeight/Weight').to_s.to_f
             

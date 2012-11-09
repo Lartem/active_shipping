@@ -66,13 +66,14 @@ module ActiveMerchant
         @last_request = r
       end
 
-      def timestamp_from_business_day(days)
+      def timestamp_from_business_day(days, include_saturday = false)
         return unless days
         date = DateTime.now.utc
+        holidays = include_saturday ? [0] : [0,6]
         days.times do
           begin
             date = date + 1
-          end until ![0,6].include?(date.wday)
+          end until !holidays.include?(date.wday)
         end
         date
       end

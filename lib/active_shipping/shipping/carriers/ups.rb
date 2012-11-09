@@ -928,8 +928,9 @@ module ActiveMerchant
             
             billing_weight = rated_shipment.get_text('BillingWeight/Weight').to_s.to_f
             
-            delivery_range = [Date.today + days_to_delivery, Date.today + days_to_delivery]
-            
+
+            delivery_range = [timestamp_from_business_day(days_to_delivery, !!options[:saturday_delivery])] * 2
+
             rate_estimates << RateEstimate.new(origin, destination, @@name,
                                 service_name,
                                 :total_price => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s.to_f,

@@ -871,6 +871,7 @@ module ActiveMerchant
       end
 
       def parse_rate_response(origin, destination, packages, response, options={})
+        p "UPS Rate response: #{response}"
         rates = []
         imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
         package_weight = imperial ? packages[0].pounds : packages[0].kgs

@@ -579,9 +579,9 @@ module ActiveMerchant
           #   # not implemented: PickupType/PickupDetails element
           # end
           # cc = options[:customer_classification] || DEFAULT_CUSTOMER_CLASSIFICATIONS[pickup_type]
-          # root_node << XmlNode.new('CustomerClassification') do |cc_node|
-          #   cc_node << XmlNode.new('Code', CUSTOMER_CLASSIFICATIONS[cc])
-          # end
+          root_node << XmlNode.new('CustomerClassification') do |cc_node|
+            cc_node << XmlNode.new('Code', '00')
+          end
           
           root_node << XmlNode.new('Shipment') do |shipment|
             # not implemented: Shipment/Description element

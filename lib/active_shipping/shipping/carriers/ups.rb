@@ -910,7 +910,7 @@ module ActiveMerchant
           xml.elements.each('/*/RatedShipment') do |rated_shipment|
             service_code = rated_shipment.get_text('Service/Code').to_s
             days_to_delivery = rated_shipment.get_text('GuaranteedDaysToDelivery').to_s.to_i
-            days_to_delivery = 1 if days_to_delivery == 0
+            days_to_delivery = nil if days_to_delivery == 0
             
             surcharges = {}
             
@@ -931,16 +931,18 @@ module ActiveMerchant
 
             delivery_range = [timestamp_from_business_day(days_to_delivery, !!options[:saturday_delivery])] * 2
 
-            rate_estimates << RateEstimate.new(origin, destination, @@name,
-                                service_name,
-                                :total_price => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s.to_f,
-                                :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
-                                :service_code => service_name.upcase.gsub(/ /, '_'),
-                                :packages => packages,
-                                :dim => billing_weight.to_i != package_weight.to_i,
-                                :base_charge => rated_shipment.get_text('TransportationCharges/MonetaryValue').to_s,
-                                :delivery_range => delivery_range,
-                                :surcharges => surcharges)
+            if valid_service? service_name
+              rate_estimates << RateEstimate.new(origin, destination, @@name,
+                                  service_name,
+                                  :total_price => rated_shipment.get_text('TotalCharges/MonetaryValue').to_s.to_f,
+                                  :currency => rated_shipment.get_text('TotalCharges/CurrencyCode').to_s,
+                                  :service_code => service_name.upcase.gsub(/ /, '_'),
+                                  :packages => packages,
+                                  :dim => billing_weight.to_i != package_weight.to_i,
+                                  :base_charge => rated_shipment.get_text('TransportationCharges/MonetaryValue').to_s,
+                                  :delivery_range => delivery_range,
+                                  :surcharges => surcharges)
+            end
           end
         end
         if rate_estimates.empty?
@@ -948,6 +950,21 @@ module ActiveMerchant
           message = "No shipping rates could be found for the destination address" if message.blank?
         end
         RateResponse.new(success, message, Hash.from_xml(response).values.first, :rates => rate_estimates, :xml => response, :request => last_request)
+      end
+
+      def valid_service?(service_name)
+        is_saturday_delivery = service_name.include? 'Saturday Delivery'
+        if !is_saturday_delivery 
+          true
+        else
+          valid_names = []
+          if(Date.today.thursday?)
+            valid_names = ['UPS Second Day Air Saturday Delivery', 'UPS Second Day Air A.M. Saturday Delivery']
+          elsif(Date.today.friday?)
+            valid_names = ['UPS Next Day Air Saturday Delivery', 'UPS Next Day Air Saver Saturday Delivery', 'UPS Next Day Air Early A.M. Saturday Delivery']
+          end
+          valid_names.include?(service_name)
+        end
       end
       
       def parse_tracking_response(response, options={})

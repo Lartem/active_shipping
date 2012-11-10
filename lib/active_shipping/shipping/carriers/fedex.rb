@@ -672,6 +672,7 @@ module ActiveMerchant
       end
       
       def parse_rate_response(origin, destination, packages, response, options)
+        p "Fedex Rate Response #{response}"
         rate_estimates = []
         success, message = nil
         
@@ -701,6 +702,9 @@ module ActiveMerchant
               })
             end
 
+          base_charge = rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalBaseCharge/Amount').to_s.to_f
+          discount = rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalFreightDiscounts').to_s.to_f
+          base_charge -= discount
           rate_estimates << RateEstimate.new(origin, destination, @@name,
                               self.class.service_name_for_code(service_type),
                               :service_code => service_code,
@@ -709,7 +713,7 @@ module ActiveMerchant
                               :packages => packages,
                               :delivery_range => [rated_shipment.get_text('DeliveryTimestamp').to_s] * 2,
                               :dim => rated_shipment.get_text('RatedShipmentDetails/RatedPackages/PackageRateDetail/RatedWeightMethod').to_s == 'DIM',
-                              :base_charge => rated_shipment.get_text('RatedShipmentDetails/ShipmentRateDetail/TotalBaseCharge/Amount').to_s,
+                              :base_charge => base_charge.to_s,
                               :surcharges => surcharges)
 	    end
         if rate_estimates.empty?

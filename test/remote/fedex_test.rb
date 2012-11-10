@@ -93,6 +93,22 @@ class FedExTest < Test::Unit::TestCase
       end
     end
   end
+
+  def test_with_zip_only
+    response = nil
+    assert_nothing_raised do
+      response = @carrier_prod.find_rates(
+                   Location.new({:postal_code => '94040', :country => 'US'}),
+                   Location.new({:postal_code => '77060', :country => 'US'}),
+                   Package.new(70*16, [15,60,12], {:units => :imperial}),
+                 )
+      assert !response.rates.blank?
+      response.rates.each do |rate|
+        assert_instance_of String, rate.service_name
+        assert_instance_of Fixnum, rate.price
+      end
+    end
+  end
   
   def test_ottawa_to_london
     response = nil

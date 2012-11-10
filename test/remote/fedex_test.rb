@@ -97,10 +97,10 @@ class FedExTest < Test::Unit::TestCase
   def test_with_zip_only
     response = nil
     assert_nothing_raised do
-      response = @carrier_prod.find_rates(
+      response = @carrier.find_rates(
                    Location.new({:postal_code => '94040', :country => 'US'}),
                    Location.new({:postal_code => '77060', :country => 'US'}),
-                   Package.new(70*16, [15,60,12], {:units => :imperial}),
+                   Package.new(10*16, [15,20,12], {:units => :imperial}),
                  )
       assert !response.rates.blank?
       response.rates.each do |rate|

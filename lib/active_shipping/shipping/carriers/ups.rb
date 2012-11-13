@@ -197,29 +197,11 @@ module ActiveMerchant
       # UPS Address validation schema contains only one address container
       def validate_address(address, options={})
         options = @options.update(options)
-        access_request = build_access_request
-        address_validation_city_request = build_address_validation_city_request(address, options)
-        p 'Address city validation request'
-        #UPS API wants to see <?xml ..?> tags in this request
-        req = "<?xml version='1.0'?>" + access_request +"<?xml version='1.0'?>"+ address_validation_city_request
-        p req
-        response_city_validation = commit(:address_validation, save_request(req), (options[:test] || false))
-        p 'Address validation response_city_validation'
-        p response_city_validation
-        parsed_response = parse_address_city_validation_response(response_city_validation, options)
-        
-        
-        if parsed_response.city_level_status
-          address_street_validation_request = build_address_validation_street_request(address, options)
-          p address_street_validation_request
-          #UPS sandbox is not knowing about all states
-          response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (false))
-          p response_street_validation
-          response_street_validation = response_street_validation.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-          parsed_response = parse_address_street_validation_response(response_street_validation, parsed_response, options)
-
-        end
-        p parsed_response
+        address_street_validation_request = build_address_validation_street_request(address, options)
+        #UPS sandbox is not knowing about all states
+        response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (false))
+        response_street_validation = response_street_validation.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parsed_response = parse_address_street_validation_response(response_street_validation, options)
         parsed_response
       end
 
@@ -324,7 +306,9 @@ module ActiveMerchant
           end
 
           root_node << XmlNode.new('AddressKeyFormat') do |address_key_node|
-            address_key_node << XmlNode.new('AddressLine', address.address1) unless address.address1.blank?
+            address_line_val = address.address1
+            address_line_val += ', ' + address.address2 unless address.address2.blank?
+            address_key_node << XmlNode.new('AddressLine', address_line_val)
             address_key_node << XmlNode.new('PoliticalDivision2', address.city) unless address.city.blank?
             address_key_node << XmlNode.new('PoliticalDivision1', address.state) unless address.state.blank?          
             address_key_node << XmlNode.new('PostcodePrimaryLow', address.postal_code) unless address.postal_code.blank?
@@ -860,34 +844,45 @@ module ActiveMerchant
         address_validation_result
       end
 
-      def parse_address_street_validation_response(response, parsed_city_response, options)
+      def parse_address_street_validation_response(response, options)
         xml = REXML::Document.new(response)
         success = response_success?(xml)
         message = response_message(xml)
-        parsed_city_response.street_level_status = success
-        parsed_city_response.valid_address = xml.elements['/Envelope/Body/XAVResponse/ValidAddressIndicator'] != nil
+        address_valid = xml.elements['/Envelope/Body/XAVResponse/ValidAddressIndicator'] != nil
+        address_type = 'undetermined'
+
+        if (address_valid)
+          address_type = xml.get_text('/Envelope/Body/XAVResponse/AddressClassification/Description').to_s.downcase
+          address_type = 'undetermined' if address_type.casecmp('UnClassified') == 0
+        end
+
+        adressess = {}
         
         if success
-          type = parse_address_type(xml.elements['/Envelope/Body/XAVResponse/AddressClassification']) if xml.elements['/Envelope/Body/XAVResponse/AddressClassification']
           
-          parsed_city_response.type = type
-          candidates = []
-          xml.elements.each('/Envelope/Body/XAVResponse/Candidate') do |candidate_node|
-            ca_type = parse_address_type(candidate_node.elements['AddressClassification'])
+          xml.elements.each_with_index('/Envelope/Body/XAVResponse/Candidate') do |candidate_node, i|
+            address1, address2, address3 = candidate_node.elements.inject('AddressKeyFormat/AddressLine', []) {|acc, street_line| acc.push(street_line.get_text.to_s)}
             location = Location.new(
-              :address1 => candidate_node.get_text('AddressKeyFormat/AddressLine'),
-              :city => candidate_node.get_text('AddressKeyFormat/PoliticalDivision2 '),
-              :state => candidate_node.get_text('AddressKeyFormat/PoliticalDivision1'),
-              :postal_code => candidate_node.get_text('AddressKeyFormat/PostcodePrimaryLow'),
+              :address1 => address1,
+              :address2 => address2,
+              :address3 => address3,
+              :city => candidate_node.get_text('AddressKeyFormat/PoliticalDivision2 ').to_s,
+              :state => candidate_node.get_text('AddressKeyFormat/PoliticalDivision1').to_s,
+              :postal_code => candidate_node.get_text('AddressKeyFormat/PostcodePrimaryLow').to_s,
+              :country => candidate_node.get_text('AddressKeyFormat/CountryCode').to_s,
+              :address_type => candidate_node.get_text('AddressClassification/Description').to_s.downcase
             )
-            address_candidate = AddressCandidate.new(ca_type, location)
-            candidates.push(address_candidate)
+
+            adressess.merge!({i => AddressValidationDetails.new(location, 1, i, nil, nil)})
+
           end
-        parsed_city_response.candidates = candidates  
         end
-        parsed_city_response.status = parsed_city_response.city_level_status && parsed_city_response.street_level_status 
-      
-        parsed_city_response
+        AddressValidation.new(success, message, Hash.from_xml(response),
+          :carrier => @@name,
+          :xml => response,
+          :request => last_request,
+          :addresses => adressess
+        )
       end
 
       def parse_address_type(node, options={})
@@ -896,7 +891,6 @@ module ActiveMerchant
       end
 
       def parse_rate_response(origin, destination, packages, response, options={})
-        p "UPS Rate response: #{response}"
         rates = []
         imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
         package_weight = imperial ? packages[0].pounds : packages[0].kgs
@@ -927,7 +921,6 @@ module ActiveMerchant
             service_name = "#{service_name} Saturday Delivery" if options[:saturday_delivery]
             
             billing_weight = rated_shipment.get_text('BillingWeight/Weight').to_s.to_f
-            
 
             delivery_range = [timestamp_from_business_day(days_to_delivery, !!options[:saturday_delivery])] * 2
 
@@ -942,6 +935,7 @@ module ActiveMerchant
                                   :base_charge => rated_shipment.get_text('TransportationCharges/MonetaryValue').to_s,
                                   :delivery_range => delivery_range,
                                   :surcharges => surcharges)
+
             end
           end
         end
@@ -949,7 +943,11 @@ module ActiveMerchant
           success = false
           message = "No shipping rates could be found for the destination address" if message.blank?
         end
-        RateResponse.new(success, message, Hash.from_xml(response).values.first, :rates => rate_estimates, :xml => response, :request => last_request)
+        RateResponse.new(success,
+                         message, Hash.from_xml(response).values.first,
+                         :rates => rate_estimates,
+                         :xml => response,
+                         :request => last_request)
       end
 
       def valid_service?(service_name)

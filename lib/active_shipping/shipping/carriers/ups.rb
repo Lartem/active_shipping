@@ -3,6 +3,7 @@
 module ActiveMerchant
   module Shipping
     class UPS < Carrier
+      require 'lumberjack'
       self.retry_safe = true
       
       cattr_accessor :default_options
@@ -15,7 +16,7 @@ module ActiveMerchant
       RESOURCES = {
         :rates => 'ups.app/xml/Rate',
         :track => 'ups.app/xml/Track',
-        :address_validation => 'ups.app/xml/AV',
+        :address_validation_city => 'ups.app/xml/AV',
         :shipping => 'webservices/Ship', # webservices
         :address_validation_street => 'webservices/XAV',
         :courier_dispatch => 'webservices/Pickup',
@@ -199,11 +200,11 @@ module ActiveMerchant
         options = @options.update(options)
         address_validation_request = build_address_validation_street_request(address, options)
         #UPS sandbox is not knowing about all states
+        log(:address_validation, address_validation_request)
         response = commit(:address_validation_street, save_request(address_validation_request), (false))
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        parsed_response = parse_address_street_validation_response(response, options)
-        p "Parsed address validation response class: #{parsed_response.class}"
-        parsed_response
+        log(:address_validation, response)
+        parse_address_street_validation_response(response, options)
       end
 
       def check_pickup_availability()
@@ -307,9 +308,8 @@ module ActiveMerchant
           end
 
           root_node << XmlNode.new('AddressKeyFormat') do |address_key_node|
-            address_line_val = address.address1
-            address_line_val += ', ' + address.address2 unless address.address2.blank?
-            address_key_node << XmlNode.new('AddressLine', address_line_val)
+            address_key_node << XmlNode.new('AddressLine', address.address1) unless address.address1.blank?
+            address_key_node << XmlNode.new('AddressLine', address.address2) unless address.address2.blank?
             address_key_node << XmlNode.new('PoliticalDivision2', address.city) unless address.city.blank?
             address_key_node << XmlNode.new('PoliticalDivision1', address.state) unless address.state.blank?          
             address_key_node << XmlNode.new('PostcodePrimaryLow', address.postal_code) unless address.postal_code.blank?
@@ -855,6 +855,7 @@ module ActiveMerchant
         if (address_valid)
           address_type = xml.get_text('/Envelope/Body/XAVResponse/AddressClassification/Description').to_s.downcase
           address_type = 'undetermined' if address_type.casecmp('UnClassified') == 0
+          address_type = 'undetermined' if address_type.casecmp('Unknown') == 0
         end
 
         adressess = {}
@@ -871,7 +872,7 @@ module ActiveMerchant
               :state => candidate_node.get_text('AddressKeyFormat/PoliticalDivision1').to_s,
               :postal_code => candidate_node.get_text('AddressKeyFormat/PostcodePrimaryLow').to_s,
               :country => candidate_node.get_text('AddressKeyFormat/CountryCode').to_s,
-              :address_type => candidate_node.get_text('AddressClassification/Description').to_s.downcase
+              :address_type => address_type.to_s.downcase
             )
 
             adressess.merge!({i => AddressValidationDetails.new(location, 1, i, nil, nil)})

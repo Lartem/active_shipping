@@ -5,7 +5,7 @@ class UPSTest < Test::Unit::TestCase
   def setup
     @packages  = TestFixtures.packages
     @locations = TestFixtures.locations
-    @carrier   = UPS.new(fixtures(:ups).merge(:test => true))
+    @carrier   = UPS.new(fixtures(:ups).merge(:test => true, :log_dir =>'./logs/'))
   end
   
   def test_tracking

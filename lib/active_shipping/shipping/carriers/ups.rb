@@ -145,7 +145,7 @@ module ActiveMerchant
       TransactionReference = Struct.new(:customer_context, :transaction_identifier)
 
       #Address validation response
-      AddressValidationResponse = Struct.new(:city_level_status, :street_level_status, :status, :message, :type, :error, :valid_address, :candidates)
+      #AddressValidationResponse = Struct.new(:city_level_status, :street_level_status, :status, :message, :type, :error, :valid_address, :candidates)
       AddressCandidate = Struct.new(:address_type, :location)
       AddressType = Struct.new(:code, :description)
       Error = Struct.new(:code, :severity, :description)
@@ -197,11 +197,12 @@ module ActiveMerchant
       # UPS Address validation schema contains only one address container
       def validate_address(address, options={})
         options = @options.update(options)
-        address_street_validation_request = build_address_validation_street_request(address, options)
+        address_validation_request = build_address_validation_street_request(address, options)
         #UPS sandbox is not knowing about all states
-        response_street_validation = commit(:address_validation_street, save_request(address_street_validation_request), (false))
-        response_street_validation = response_street_validation.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        parsed_response = parse_address_street_validation_response(response_street_validation, options)
+        response = commit(:address_validation_street, save_request(address_validation_request), (false))
+        response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        parsed_response = parse_address_street_validation_response(response, options)
+        p "Parsed address validation response class: #{parsed_response.class}"
         parsed_response
       end
 
@@ -828,21 +829,21 @@ module ActiveMerchant
          resp
       end
 
-      def parse_address_city_validation_response response, options={}
-        xml = REXML::Document.new(response)
-        success = response_success?(xml)
-        message = response_message(xml)
-        address_validation_result = nil
-        if success
-          address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, nil, nil)
-        else
-          error_node = xml.elements['/AddressValidationResponse/Response/Error']
-          error = Error.new(error_node.get_text('ErrorCode'), error_node.get_text('ErrorSeverity'), error_node.get_text('ErrorDescription'))
-          p error
-          address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, error, nil)
-        end
-        address_validation_result
-      end
+      # def parse_address_city_validation_response response, options={}
+      #   xml = REXML::Document.new(response)
+      #   success = response_success?(xml)
+      #   message = response_message(xml)
+      #   address_validation_result = nil
+      #   if success
+      #     address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, nil, nil)
+      #   else
+      #     error_node = xml.elements['/AddressValidationResponse/Response/Error']
+      #     error = Error.new(error_node.get_text('ErrorCode'), error_node.get_text('ErrorSeverity'), error_node.get_text('ErrorDescription'))
+      #     p error
+      #     address_validation_result = AddressValidationResponse.new(success, nil, nil, message, nil, error, nil)
+      #   end
+      #   address_validation_result
+      # end
 
       def parse_address_street_validation_response(response, options)
         xml = REXML::Document.new(response)

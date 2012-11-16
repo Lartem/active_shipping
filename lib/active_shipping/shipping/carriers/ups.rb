@@ -169,8 +169,9 @@ module ActiveMerchant
         packages = Array(packages)
         access_request = build_access_request
         rate_request = build_rate_request(origin, destination, packages, options)
-        p rate_request
+        log(:rates, rate_request)
         response = commit(:rates, save_request(access_request + rate_request), (options[:test] || false))
+        log(:rates, response)
         parse_rate_response(origin, destination, packages, response, options)
       end
       
@@ -178,17 +179,15 @@ module ActiveMerchant
         options = @options.update(options)
         access_request = build_access_request
         tracking_request = build_tracking_request(tracking_number, options)
-        p access_request + tracking_request
+        log(:tracking, tracking_request)
         response = commit(:track, save_request(access_request + tracking_request), (options[:test] || false))
-        p 'Tracking response'
-        p response
+        log(:tracking, response)
         parse_tracking_response(response, options)
       end
 
       def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
         options = @options.update(options)
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
-        
         response = commit(:shipping, save_request(shipping_request), (options[:test] || false))
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         parse_shipping_response(response, options)

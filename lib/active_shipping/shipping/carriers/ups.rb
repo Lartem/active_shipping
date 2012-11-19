@@ -19,7 +19,7 @@ module ActiveMerchant
         :address_validation_city => 'ups.app/xml/AV',
         :shipping => 'webservices/Ship', # webservices
         :address_validation_street => 'webservices/XAV',
-        :courier_dispatch => 'webservices/Pickup',
+        :courier_dispatch_url => 'webservices/Pickup',
         :cancel_shipping => 'webservices/Void'
       }
       
@@ -222,14 +222,11 @@ module ActiveMerchant
       
       def courier_dispatch(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential=nil, options={})
         options = @options.update(options)
-        p options
         courier_dispatch_request = build_courier_dispatch_request(pickup_location, close_time, ready_time, pickup_date, service_code, quantity, dest_country_code, container_code, total_weight, weight_units, residential)
-        puts 'Courier dispatch request'
-        p courier_dispatch_request
-        response = commit(:courier_dispatch, save_request(courier_dispatch_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        puts 'response!'
+        log(:courier_dispatch, courier_dispatch_request)
+        response = commit(:courier_dispatch_url, save_request(courier_dispatch_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        p response
+        log(:courier_dispatch, response)
         parse_courier_dispatch_response(response, options)
       end
 
@@ -238,7 +235,7 @@ module ActiveMerchant
         courier_dispatch_cancel_request = build_courier_dispatch_cancel_request(prn, options)
         puts 'Courier dispatch Cancel request'
         p courier_dispatch_cancel_request
-        response = commit(:courier_dispatch, save_request(courier_dispatch_cancel_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        response = commit(:courier_dispatch_url, save_request(courier_dispatch_cancel_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         p response
         parse_courier_dispatch_cancel_response(response, options)

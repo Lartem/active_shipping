@@ -406,8 +406,6 @@ module ActiveMerchant
                 end
               end
             end
-
-
           end
         end
         xml_request.to_s
@@ -820,7 +818,9 @@ module ActiveMerchant
               changes = address_details_node.elements.inject('Changes', []) {|acc, change_node| acc.push(change_node.get_text.to_s)}
               delivery_point_validation = address_details_node.get_text('DeliveryPointValidation')
               address_details_node.elements.each('Address') do |address_node|
-                address1, address2, address3 = address_node.elements.inject('StreetLines', []) {|acc, street_line| acc.push(street_line.get_text.to_s)}
+                address1, address2, address3 = address_node.elements.inject('StreetLines', []) {|acc, street_line|
+                 acc.push(street_line.get_text.to_s)
+                }
                 location = Location.new(
                   :address1 => address1,
                   :address2 => address2,

@@ -233,11 +233,10 @@ module ActiveMerchant
       def courier_dispatch_cancel(prn, options={})
         options = @options.update(options)
         courier_dispatch_cancel_request = build_courier_dispatch_cancel_request(prn, options)
-        puts 'Courier dispatch Cancel request'
-        p courier_dispatch_cancel_request
+        log(:cancel_pickup, courier_dispatch_cancel_request)
         response = commit(:courier_dispatch_url, save_request(courier_dispatch_cancel_request), (options[:test] || false)) #.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
-        p response
+        log(:cancel_pickup, response)
         parse_courier_dispatch_cancel_response(response, options)
       end
 

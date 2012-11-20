@@ -585,7 +585,7 @@ module ActiveMerchant
             rs << XmlNode.new('RateRequestTypes', 'ACCOUNT')
             rs << XmlNode.new('PackageCount', packages.size)
             packages.each do |pkg|
-              rs << build_package_node(pkg, 'RequestedPackages', imperial)
+              rs << build_package_node(pkg, 'RequestedPackages', imperial, nil, options[:packaging_type] != 'FEDEX_ENVELOPE')
             end
             
           end

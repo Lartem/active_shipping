@@ -133,7 +133,7 @@ module ActiveMerchant #:nodoc:
       def process_dimensions
         @dimensions = @dimensions.map do |l|
           attribute_from_metric_or_imperial(l, Length, :centimetres, :inches)
-        end.sort
+        end
         # [1,2] => [1,1,2]
         # [5] => [5,5,5]
         # etc..

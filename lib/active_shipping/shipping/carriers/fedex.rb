@@ -568,6 +568,10 @@ module ActiveMerchant
 
           # Returns delivery dates
           root_node << XmlNode.new('ReturnTransitAndCommit', true)
+
+          root_node << XmlNode.new('CarrierCodes', 'FDXE', 'xmlns' => 'http://fedex.com/ws/rate/v6')
+          root_node << XmlNode.new('CarrierCodes', 'FDXG', 'xmlns' => 'http://fedex.com/ws/rate/v6')
+
           # Returns saturday delivery shipping options when available
           root_node << XmlNode.new('VariableOptions', 'SATURDAY_DELIVERY')
           

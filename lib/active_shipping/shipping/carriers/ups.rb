@@ -188,8 +188,10 @@ module ActiveMerchant
       def request_shipping(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options={})
         options = @options.update(options)
         shipping_request = build_shipping_request(shipper, shipper_location, ship_to_person, ship_to_location, ship_from_person, ship_from_location, package_item, options)
+        log(:request_shipping, shipping_request)        
         response = commit(:shipping, save_request(shipping_request), (options[:test] || false))
         response = response.gsub(/\sxmlns(:|=)[^>]*/, '').gsub(/<(\/)?[^<]*?\:(.*?)>/, '<\1\2>')
+        log(:request_shipping, response)        
         parse_shipping_response(response, options)
       end
       
@@ -755,12 +757,12 @@ module ActiveMerchant
           billing_weight_uom = UnitOfMeasurement.new(shipment_result_node.get_text('BillingWeight/UnitOfMeasurement/Code'), shipment_result_node.get_text('BillingWeight/UnitOfMeasurement/Description'))
           billing_weight = BillingWeight.new(billing_weight_uom, shipment_result_node.get_text('BillingWeight/Weight'))
           
-          shipment_identification_number = shipment_result_node.get_text('ShipmentIdentificationNumber')
+          shipment_identification_number = shipment_result_node.get_text('ShipmentIdentificationNumber').to_s
 
           tracking_number = shipment_result_node.get_text('PackageResults/TrackingNumber')
           service_options_charges_pr = Charge.new(shipment_result_node.get_text('PackageResults/ServiceOptionsCharges/CurrencyCode'), shipment_result_node.get_text('PackageResults/ServiceOptionsCharges/MonetaryValue'))
           
-          shipping_label = ShippingLabel.new(shipment_result_node.get_text('PackageResults/ShippingLabel/ImageFormat/Code'), shipment_result_node.get_text('PackageResults/ShippingLabel/GraphicImage'), shipment_result_node.get_text('PackageResults/ShippingLabel/HTMLImage'))
+          shipping_label = ShippingLabel.new(shipment_result_node.get_text('PackageResults/ShippingLabel/ImageFormat/Code'), shipment_result_node.get_text('PackageResults/ShippingLabel/GraphicImage').to_s, shipment_result_node.get_text('PackageResults/ShippingLabel/HTMLImage').to_s)
 
           package_results = PackageResult.new(tracking_number, service_options_charges_pr, shipping_label)
 

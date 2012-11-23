@@ -91,6 +91,11 @@ module ActiveMerchant #:nodoc:
         @address_type = value.to_s
       end
 
+      def company_name=(value)
+        return unless value.present?
+        @company_name = value.to_s
+      end
+
       def to_hash
         {
           :country => country_code,

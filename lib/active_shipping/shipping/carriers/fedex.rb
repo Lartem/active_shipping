@@ -27,6 +27,7 @@ module ActiveMerchant
         "PRIORITY_OVERNIGHT" => "FedEx Priority Overnight",
         "PRIORITY_OVERNIGHT_SATURDAY_DELIVERY" => "FedEx Priority Overnight Saturday Delivery",
         "FEDEX_2_DAY" => "FedEx 2 Day",
+        "FEDEX_2_DAY_AM" => "Fedex 2 day A.M.",
         "FEDEX_2_DAY_SATURDAY_DELIVERY" => "FedEx 2 Day Saturday Delivery",
         "STANDARD_OVERNIGHT" => "FedEx Standard Overnight",
         "FIRST_OVERNIGHT" => "FedEx First Overnight",
@@ -560,17 +561,17 @@ module ActiveMerchant
       def build_rate_request(origin, destination, packages, options={})
         imperial = ['US','LR','MM'].include?(origin.country_code(:alpha2))
 
-        xml_request = XmlNode.new('RateRequest', 'xmlns' => 'http://fedex.com/ws/rate/v6') do |root_node|
+        xml_request = XmlNode.new('RateRequest', 'xmlns' => 'http://fedex.com/ws/rate/v10') do |root_node|
           root_node << build_request_header
 
           # Version
-          root_node << build_version_node('crs', 6, 0, 0) 
+          root_node << build_version_node('crs', 10, 0, 0) 
 
           # Returns delivery dates
           root_node << XmlNode.new('ReturnTransitAndCommit', true)
 
-          root_node << XmlNode.new('CarrierCodes', 'FDXE', 'xmlns' => 'http://fedex.com/ws/rate/v6')
-          root_node << XmlNode.new('CarrierCodes', 'FDXG', 'xmlns' => 'http://fedex.com/ws/rate/v6')
+          root_node << XmlNode.new('CarrierCodes', 'FDXE', 'xmlns' => 'http://fedex.com/ws/rate/v10')
+          root_node << XmlNode.new('CarrierCodes', 'FDXG', 'xmlns' => 'http://fedex.com/ws/rate/v10')
 
           # Returns saturday delivery shipping options when available
           root_node << XmlNode.new('VariableOptions', 'SATURDAY_DELIVERY')
@@ -589,7 +590,7 @@ module ActiveMerchant
             rs << XmlNode.new('RateRequestTypes', 'ACCOUNT')
             rs << XmlNode.new('PackageCount', packages.size)
             packages.each do |pkg|
-              rs << build_package_node(pkg, 'RequestedPackages', imperial, nil, options[:packaging_type] != 'FEDEX_ENVELOPE')
+              rs << build_package_node(pkg, 'RequestedPackageLineItems', imperial, nil, options[:packaging_type] != 'FEDEX_ENVELOPE')
             end
             
           end
@@ -599,6 +600,7 @@ module ActiveMerchant
 
       def build_package_node(package, node_name, imperial, xmlns=nil, include_dimensions=true)
         XmlNode.new(node_name, xmlns) do |rps|
+          rps << XmlNode.new('GroupPackageCount', 1)
           rps << XmlNode.new('Weight') do |tw|
             tw << XmlNode.new('Units', imperial ? 'LB' : 'KG')
             tw << XmlNode.new('Value', [((imperial ? package.lbs : package.kgs).to_f*1000).round/1000.0, 0.1].max)

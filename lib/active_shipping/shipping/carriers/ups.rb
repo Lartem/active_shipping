@@ -704,7 +704,7 @@ module ActiveMerchant
           address_node << XmlNode.new('StateProvinceCode', location.province) unless location.province.blank?
           address_node << XmlNode.new('PostalCode', location.postal_code) unless location.postal_code.blank?
           address_node << XmlNode.new('CountryCode', location.country_code(:alpha2)) unless location.country_code(:alpha2).blank?
-          address_node << XmlNode.new("ResidentialAddressIndicator", true) if location.residential?
+          address_node << XmlNode.new("ResidentialAddressIndicator") if location.residential?
         end
       end
       
